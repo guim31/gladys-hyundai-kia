@@ -9,7 +9,7 @@
   "version": "1.0.0",
   "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-hyundai-kia/main/cover.png",
   "categories": ["energy"],
   "transports": ["cloud"],
   "config_schema": [
