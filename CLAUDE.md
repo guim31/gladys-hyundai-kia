@@ -154,6 +154,15 @@ code de ce dépôt. Compléter ce fichier quand un nouveau piège est découvert
 - Un champ `secret` dans les `fields` d'une **action** est impossible à remplir, et une action
   n'applique **aucun `default`** tout en exigeant les champs `required` (422). Issues
   GladysAssistant/Gladys#3154 et #3155.
+- **Résultat d'une action : deux niveaux seulement** (5.1.4). Résolu = vert, levé = rouge, pas
+  d'avertissement. Lever une erreur dont le `message` est un objet `{ en, fr }` : le SDK 0.14
+  l'envoie tel quel, le cœur le relaie intact et le navigateur choisit la langue (le SDK n'a pas
+  de classe `ActionFailure` : la définir soi-même). Une action ne reçoit **pas** le formulaire en
+  cours : elle travaille sur la configuration enregistrée, et son résultat reste affiché sous le
+  bouton après « Enregistrer ».
+- **Une commande d'appareil refusée** (`onDeviceSetValue` qui lève) ne finit que dans les journaux
+  du cœur, sans toast ; il n'enregistre alors pas la valeur demandée. Republier la valeur connue
+  pour défaire l'affichage optimiste, et montrer la raison ailleurs (widget).
 
 **Widgets, déclencheurs, actions de scène (SDK ≥ 0.14, Gladys ≥ 5.1)**
 
@@ -168,6 +177,9 @@ code de ce dépôt. Compléter ce fichier quand un nouveau piège est découvert
   `requestWidgetRefresh` à la création d'un appareil. `validateWidgetContent` est exporté pour les
   tests, mais ne vérifie pas que les `external_id` liés existent : les croiser avec `buildDevice`.
 - Une ligne de `status` exige un `value` (nombre ou texte ≤ 40).
+- Une action de widget **résolue** s'affiche en neutre ; **levée**, en rouge (« Action échouée —
+  message »), le message réduit à une chaîne (`${error.message}`, 200 caractères). L'action ne
+  reçoit pas la langue du lecteur (la lecture du widget, si).
 - Le cœur **jette un bouton dont la clé d'action est déjà prise** : clés numérotées.
 - Le vocabulaire des widgets n'a ni liste ni curseur, **par choix** du cœur. Seul un bouton
   `device_feature` numérique a un état actif natif.
@@ -204,6 +216,10 @@ code de ce dépôt. Compléter ce fichier quand un nouveau piège est découvert
 - Les commandes CCS2 exigent un jeton de contrôle obtenu par le **PIN** du compte
   (`PUT /api/v1/user/pin`, mis en cache) ; l'ancien protocole n'en veut pas. Le résultat d'une
   commande se lit dans les notifications (`records`), pas dans sa réponse.
+- Retour réel (IONIQ 5, 10/2026) : le cloud a demandé le PIN pour un déverrouillage. Notre client
+  ne lève « needs the PIN » que sur le chemin CCS2 : le cloud listait donc cette voiture en CCS2.
+  Le PIN est demandé à tous dans la configuration ; le protocole de chaque voiture est journalisé
+  au démarrage.
 - Lecture « en cache » (dernier état envoyé par la voiture) sans réveil ; lecture **forcée** =
   réveil du modem, 12 V et quota quotidien (5091) : désactivée par défaut, jamais de 22 h à 6 h ni
   moteur allumé. Quota épuisé : pause d'une heure.

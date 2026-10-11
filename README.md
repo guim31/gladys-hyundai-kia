@@ -6,8 +6,8 @@ Europe** through the same cloud as the official apps: battery and range,
 charging, charge limits, climate, locks, doors and windows, odometer, 12 V
 battery.
 
-> **Developed without the hardware: feedback welcome.** No car and no
-> Bluelink / Kia Connect account were used. The cloud protocol is ported from
+> **Tested on a Hyundai IONIQ 5 (European account): sign-in and unlocking;
+> the rest awaits your feedback.** The cloud protocol is ported from
 > [hyundai_kia_connect_api](https://github.com/Hyundai-Kia-Connect/hyundai_kia_connect_api),
 > the library of the Home Assistant integration `kia_uvo`, and the tests run on
 > car states taken from its test fixtures. Reports from owners are very
@@ -39,7 +39,7 @@ One Gladys device per car, keyed on its VIN:
 - A Hyundai Bluelink or Kia Connect account **in Europe**, with the car added
   in the official app. Other regions (North America, Australia, China, India)
   and Genesis are not supported.
-- For commands on the newer cars (CCS2 protocol), the 4-digit PIN of the
+- For remote commands (locks, climate, charging), the 4-digit PIN of the
   account.
 
 ## Installation
@@ -62,7 +62,10 @@ the configuration: see [`docs/en.md`](docs/en.md) (French:
   between 10 pm and 6 am.
 - **Two protocols**: the original one (`vehicleStatus`, commands without PIN)
   and CCS2 (`Vehicle` tree, commands with a control token from the PIN), chosen
-  per car by the cloud's `ccuCCS2ProtocolSupport` flag.
+  per car by the cloud's `ccuCCS2ProtocolSupport` flag (any non-zero value
+  means CCS2, as in the library; the protocol of each car is logged at
+  start-up). The configuration asks for the PIN whatever the protocol: users
+  cannot tell which one their car speaks.
 - **Commands** are answered at once with a message id; the car carries them out
   later. Their outcome is read from the account's notification records (every
   5 s, 2 minutes at most); a confirmed change is published, a failed one puts

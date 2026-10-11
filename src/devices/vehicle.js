@@ -66,7 +66,11 @@ export const isElectric = (vehicle) =>
   ELECTRIC_TYPES.has(String(vehicle?.type ?? '').toUpperCase());
 export const isPlugInHybrid = (vehicle) =>
   PLUG_IN_HYBRID_TYPES.has(String(vehicle?.type ?? '').toUpperCase());
-export const isCcs2 = (vehicle) => Number(vehicle?.ccuCCS2ProtocolSupport) === 1;
+// Any non-zero flag, as hyundai_kia_connect_api reads it.
+export const isCcs2 = (vehicle) => {
+  const flag = Number(vehicle?.ccuCCS2ProtocolSupport);
+  return Number.isFinite(flag) && flag !== 0;
+};
 
 export function vehicleIds(gladys, vin) {
   return gladys.externalIds(VEHICLE_DEVICE_TYPE, vin);

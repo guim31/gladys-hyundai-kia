@@ -74,8 +74,14 @@ function chargeRow(snapshot) {
   return { label, icon: 'battery', value: '—', color: WIDGET_COLORS.NEUTRAL };
 }
 
+// Status row of a command refusal the user must fix (40 characters at most).
+const COMMAND_ISSUES = {
+  pinMissing: { en: 'PIN to enter in the configuration', fr: 'Code PIN à saisir (configuration)' },
+  pin: { en: 'PIN refused, check the configuration', fr: 'Code PIN refusé (configuration)' },
+};
+
 function vehicleContent(view, { timeZone } = {}) {
-  const { device, created, snapshot, info } = view;
+  const { device, created, snapshot, info, commandIssue } = view;
   const electric = isElectric(info);
   const ref = (key) => `${device.external_id}:${key}`;
   const createdIds = new Set((created?.features ?? []).map((f) => f.external_id));
@@ -173,6 +179,14 @@ function vehicleContent(view, { timeZone } = {}) {
       color: WIDGET_COLORS.WARNING,
     });
   }
+  if (COMMAND_ISSUES[commandIssue]) {
+    items.push({
+      label: { en: 'Commands', fr: 'Commandes' },
+      icon: 'alert-octagon',
+      value: COMMAND_ISSUES[commandIssue],
+      color: WIDGET_COLORS.DANGER,
+    });
+  }
   items.push({
     label: { en: 'Last update', fr: 'Dernier relevé' },
     icon: 'clock',
@@ -255,13 +269,18 @@ const VEHICLE_ACTIONS = {
 
 /**
  * Widgets, keyed like the manifest. `runtime` is src/hyundaiKia.js.
- * A widget action resolves a bilingual toast, even on failure: a thrown error
- * reaches the screen as one plain string.
+ * A widget action resolves its success toast (bilingual), and throws on
+ * failure: the core (5.1.4) then shows "Action failed — <message>" in red,
+ * the message being one plain string. A widget action does not carry the
+ * viewer's language, a widget read does: the last one read is used.
  */
 export function createWidgets(runtime, { timeZone = process.env.TZ } = {}) {
+  let language = 'en';
+  const fail = (text) => new Error(text[language] ?? text.en);
   return {
     [WIDGET_KEYS.VEHICLE]: {
-      async get({ settings }) {
+      async get({ settings, language: viewer } = {}) {
+        if (typeof viewer === 'string' && viewer) language = viewer.slice(0, 2);
         const view = settings?.device ? runtime.vehicleView(settings.device) : null;
         if (!view) {
           return message(
@@ -286,10 +305,11 @@ export function createWidgets(runtime, { timeZone = process.env.TZ } = {}) {
           const [feature, value, toast] = order;
           const result = await runtime.order(settings?.device, feature, value);
           if (result === ACTION_RESULTS.SUCCESS) return toast;
-          if (result === ACTION_RESULTS.FAILED) return STATUS_MESSAGES.failed;
+          if (result === ACTION_RESULTS.FAILED) throw fail(STATUS_MESSAGES.failed);
+          // Not a failure: the car may still carry it out.
           return STATUS_MESSAGES.noAnswer;
         } catch (err) {
-          if (err.text) return err.text;
+          if (err.text) throw fail(err.text);
           throw err;
         }
       },

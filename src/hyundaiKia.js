@@ -79,9 +79,15 @@ export const STATUS_MESSAGES = {
     en: 'The sign-in pages refused the connection (protection against repeated sign-ins). Wait a few hours, then save the configuration again.',
     fr: 'Les pages de connexion ont refusé la connexion (protection contre les connexions répétées). Patientez quelques heures, puis enregistrez à nouveau la configuration.',
   },
+  // The PIN was refused (a PIN is saved).
   [ERROR_KINDS.PIN]: {
-    en: 'This car needs the PIN of your account for commands: check it in the configuration.',
-    fr: 'Cette voiture demande le code PIN de votre compte pour les commandes : vérifiez-le dans la configuration.',
+    en: 'The PIN of your account was refused: check it in the configuration of the integration.',
+    fr: 'Le code PIN de votre compte a été refusé : vérifiez-le dans la configuration de l’intégration.',
+  },
+  // The car asked for the PIN, none is saved.
+  pinMissing: {
+    en: 'Enter the PIN of your account in the configuration of the integration: the car asks for it for remote commands.',
+    fr: 'Saisissez le code PIN de votre compte dans la configuration de l’intégration : la voiture le demande pour les commandes à distance.',
   },
   [ERROR_KINDS.RATE_LIMIT]: {
     en: 'The daily request quota of the account is spent: try again tomorrow.',
@@ -98,6 +104,16 @@ export const STATUS_MESSAGES = {
   [ERROR_KINDS.DUPLICATE]: {
     en: 'Another command is already running on this car: try again in a minute.',
     fr: 'Une autre commande est déjà en cours sur cette voiture : réessayez dans une minute.',
+  },
+  // Connection test: what it checks is the saved configuration, never the
+  // form being edited (the core sends no config with an action).
+  notSaved: {
+    en: 'No account is saved yet: enter the e-mail address and password, save, then test again.',
+    fr: 'Aucun compte n’est encore enregistré : saisissez l’adresse e-mail et le mot de passe, enregistrez, puis testez à nouveau.',
+  },
+  starting: {
+    en: 'The integration is starting: try again in a few seconds.',
+    fr: 'L’intégration démarre : réessayez dans quelques secondes.',
   },
   unreachable: {
     en: 'The Bluelink / Kia Connect cloud is unreachable for now, retrying.',
@@ -126,11 +142,39 @@ export class UserError extends Error {
   }
 }
 
-function toUserError(err) {
-  if (err instanceof UserError) return err;
-  const text =
+/**
+ * A failed manifest action. Thrown, so Gladys shows it in red: the core
+ * (5.1.4) relays the thrown `message` untouched to the browser, which picks
+ * the user's language in a `{ en, fr }` object. A resolved action is always
+ * shown as a success, there is no warning level. (SDK 0.14 has no such class.)
+ */
+export class ActionFailure extends Error {
+  constructor(text) {
+    super(text.en);
+    this.message = text;
+    this.text = text;
+  }
+}
+
+/**
+ * The bilingual error of a cloud failure, `null` when none fits.
+ * @param {Error} err
+ * @param {boolean} pinSaved whether the configuration holds a PIN
+ */
+function userTextOf(err, pinSaved) {
+  if (err instanceof UserError) return err.text;
+  if (err.kind === ERROR_KINDS.PIN && !pinSaved) return STATUS_MESSAGES.pinMissing;
+  return (
     STATUS_MESSAGES[err.kind] ??
-    (err.kind === ERROR_KINDS.NETWORK ? STATUS_MESSAGES.unreachable : null);
+    (err.kind === ERROR_KINDS.NETWORK || err.kind === ERROR_KINDS.SERVER
+      ? STATUS_MESSAGES.unreachable
+      : null)
+  );
+}
+
+function toUserError(err, pinSaved) {
+  if (err instanceof UserError) return err;
+  const text = userTextOf(err, pinSaved);
   return text ? new UserError(text, err.kind) : err;
 }
 
@@ -166,6 +210,10 @@ export function createHyundaiKia({
   let backoffUntil = 0;
   let publishedDevicesJson = null;
   let stopped = false;
+  // What the user must fix before commands work (a STATUS_MESSAGES key):
+  // shown by the widget, since a refused dashboard command only reaches the
+  // core's logs. Cleared by the next accepted command or a new configuration.
+  let commandIssue = null;
   const vehicles = new Map(); // vin → { info, ref, snapshot, lastReadAt, lastForcedAt, override, forcing }
   const published = new Map(); // feature external_id → serialized value
   const nudges = new Map(); // widget key → { at, timer }
@@ -206,6 +254,18 @@ export function createHyundaiKia({
   function memoryOf(vin) {
     store.data.vehicles[vin] = store.data.vehicles[vin] ?? {};
     return store.data.vehicles[vin];
+  }
+
+  const pinSaved = () => Boolean(config?.pin);
+
+  /** A command was refused (`err`) or accepted (no `err`). */
+  function noteCommand(err) {
+    let issue = commandIssue;
+    if (!err) issue = null;
+    else if (err.kind === ERROR_KINDS.PIN) issue = pinSaved() ? ERROR_KINDS.PIN : 'pinMissing';
+    if (issue === commandIssue) return;
+    commandIssue = issue;
+    nudgeWidget(WIDGET_KEYS.VEHICLE);
   }
 
   async function setStatus(connected, message) {
@@ -404,6 +464,12 @@ export function createHyundaiKia({
         forcing: null,
       };
       vehicles.set(info.vin, vehicle);
+      // The protocol decides whether commands need the PIN: worth a line.
+      logger.info(
+        `${info.nickname || info.vehicleName || 'Vehicle'}: ${
+          ref.ccs2 ? 'CCS2 protocol, commands need the PIN' : 'original protocol'
+        }`,
+      );
       await safeRead(vehicle);
       if (blocked) return false;
     }
@@ -538,9 +604,12 @@ export function createHyundaiKia({
       msgId = await client[order.order](vehicle.ref, order.args);
     } catch (err) {
       await handleError(err, `Command ${label}`);
+      noteCommand(err);
+      // Gladys shows the value the user asked for: put the known one back.
       await publishVehicle(vehicle, { force: true });
-      throw toUserError(err);
+      throw toUserError(err, pinSaved());
     }
+    noteCommand();
     return { outcome: track(follow(vehicle, msgId, order.optimistic, label)) };
   }
 
@@ -572,6 +641,7 @@ export function createHyundaiKia({
     config = newConfig;
     stopped = false;
     blocked = null;
+    commandIssue = null;
     backoffUntil = 0;
     lastFailureAt = 0;
     if (!isConfigured(config)) {
@@ -700,8 +770,10 @@ export function createHyundaiKia({
         msgId = await client.startClimate(vehicle.ref, { temperature: celsius, duration: minutes });
       } catch (err) {
         await handleError(err, `Command ${label}`);
-        throw toUserError(err);
+        noteCommand(err);
+        throw toUserError(err, pinSaved());
       }
+      noteCommand();
       const result = await settle(track(follow(vehicle, msgId, { climateOn: true }, label)));
       if (result === ACTION_RESULTS.FAILED) throw new UserError(STATUS_MESSAGES.failed);
       return {
@@ -726,40 +798,54 @@ export function createHyundaiKia({
         await vehicle.forcing;
       } catch (err) {
         await handleError(err, 'Forced refresh');
-        throw toUserError(err);
+        throw toUserError(err, pinSaved());
       }
       return vehicle.snapshot;
     },
 
-    /** Connection test (manifest action): a short human summary. */
+    /**
+     * Connection test (manifest action): resolves a short summary (shown in
+     * green), throws an ActionFailure for anything else (shown in red). It
+     * tests the configuration the integration runs with: the saved one.
+     */
     async testConnection() {
-      if (!config || !isConfigured(config)) return STATUS_MESSAGES.notConfigured;
+      if (!config) throw new ActionFailure(STATUS_MESSAGES.starting);
+      if (!isConfigured(config)) throw new ActionFailure(STATUS_MESSAGES.notSaved);
+      let list;
       try {
         const probe = client ?? clientFactory(config, store.tokenStore);
         await probe.connect();
-        const list = await probe.vehicles();
-        const names = list
-          .map((v) => String(v.nickname || v.vehicleName || '').trim())
-          .filter(Boolean)
-          .join(', ');
-        const pinNeeded = list.some(isCcs2) && !config.pin;
-        const pinNote = pinNeeded
+        list = await probe.vehicles();
+      } catch (err) {
+        logger.warn(`Connection test: ${err.message}`);
+        throw new ActionFailure(
+          userTextOf(err, pinSaved()) ?? {
+            en: `The cloud refused the request: ${String(err.message).slice(0, 120)}`,
+            fr: `Le cloud a refusé la requête : ${String(err.message).slice(0, 120)}`,
+          },
+        );
+      }
+      const names = list
+        .map((v) => String(v.nickname || v.vehicleName || '').trim())
+        .filter(Boolean)
+        .join(', ');
+      // Whatever the protocol: the user cannot tell which one a car speaks,
+      // and a saved PIN costs nothing to the cars that do not use it.
+      const pinNote =
+        list.length > 0 && !config.pin
           ? {
-              en: ' Enter the PIN of your account to send commands.',
-              fr: ' Saisissez le code PIN de votre compte pour envoyer des commandes.',
+              en: ' Enter the PIN of your account to send remote commands (locks, climate, charging).',
+              fr: ' Saisissez le code PIN de votre compte pour les commandes à distance (verrouillage, climatisation, charge).',
             }
           : { en: '', fr: '' };
-        if (blocked) {
-          // The account works again: start over.
-          await this.reconfigure(config);
-        }
-        return {
-          en: `Connected: ${list.length} vehicle(s)${names ? ` (${names})` : ''}.${pinNote.en}`,
-          fr: `Connecté : ${list.length} véhicule(s)${names ? ` (${names})` : ''}.${pinNote.fr}`,
-        };
-      } catch (err) {
-        return toUserError(err).text ?? STATUS_MESSAGES.unreachable;
+      if (blocked) {
+        // The account works again: start over.
+        await this.reconfigure(config);
       }
+      return {
+        en: `Connected: ${list.length} vehicle(s)${names ? ` (${names})` : ''}.${pinNote.en}`,
+        fr: `Connecté : ${list.length} véhicule(s)${names ? ` (${names})` : ''}.${pinNote.fr}`,
+      };
     },
 
     // Read access for the widget and the scene actions.
@@ -772,6 +858,8 @@ export function createHyundaiKia({
         created: createdDevice(device.external_id) ?? null,
         snapshot: vehicle.snapshot,
         info: vehicle.info,
+        // 'pinMissing', ERROR_KINDS.PIN or null
+        commandIssue,
       };
     },
     get blocked() {

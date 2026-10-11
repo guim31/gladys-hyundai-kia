@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createLogger, validateWidgetContent } from '@gladysassistant/integration-sdk';
-import { createHyundaiKia, STATUS_MESSAGES } from '../src/hyundaiKia.js';
+import { ActionFailure, createHyundaiKia, STATUS_MESSAGES } from '../src/hyundaiKia.js';
 import { normalizeConfig } from '../src/config.js';
 import { createWidgets } from '../src/widgets.js';
 import { createSceneActions } from '../src/scenes.js';
@@ -280,7 +280,7 @@ test('the vehicle widget fits the core budget for every car, before and after cr
   await ctx.runtime.stop();
 });
 
-test('widget buttons answer with a bilingual toast, even when the car refuses', async () => {
+test('widget buttons: a bilingual toast on success, a thrown error when the car refuses', async () => {
   const ctx = await created({ client: createFakeClient({ result: ['success', 'failed'] }) });
   const widget = createWidgets(ctx.runtime).vehicle;
   const settings = { device: ctx.device('EV9').external_id };
@@ -288,26 +288,133 @@ test('widget buttons answer with a bilingual toast, even when the car refuses', 
     en: 'Vehicle locked',
     fr: 'Véhicule verrouillé',
   });
-  assert.deepEqual(await widget.action({ actionKey: 'unlock', settings }), STATUS_MESSAGES.failed);
-  const noPin = createFakeClient({ fail: { lock: 'pin' } });
-  const other = await created({ client: noPin });
-  const toast = await createWidgets(other.runtime).vehicle.action({
-    actionKey: 'lock',
-    settings: { device: other.device('EV9').external_id },
+  // The core shows a thrown error in red, a resolved one as a success.
+  await assert.rejects(widget.action({ actionKey: 'unlock', settings }), {
+    message: STATUS_MESSAGES.failed.en,
   });
-  assert.deepEqual(toast, STATUS_MESSAGES.pin);
   await ctx.runtime.drain();
   await ctx.runtime.stop();
-  await other.runtime.stop();
 });
 
-test('the connection test lists the cars and asks for the PIN when needed', async () => {
+test('a command refused for want of the PIN: red toast, widget row, state put back', async () => {
+  const ctx = await created({ client: createFakeClient({ fail: { unlock: 'pin' } }) });
+  const widget = createWidgets(ctx.runtime).vehicle;
+  const device = ctx.device('EV9');
+  const settings = { device: device.external_id };
+  // The toast follows the language of the last widget read.
+  await widget.get({ settings, language: 'fr' });
+  await assert.rejects(widget.action({ actionKey: 'unlock', settings }), {
+    message: STATUS_MESSAGES.pinMissing.fr,
+  });
+  let content = await widget.get({ settings, language: 'fr' });
+  assert.deepEqual(validateWidgetContent(content), []);
+  const rows = content.components.find((c) => c.type === 'status').items;
+  const row = rows.find((r) => r.label.en === 'Commands');
+  assert.equal(row.color, 'danger');
+  assert.match(row.value.fr, /PIN/);
+
+  // From the dashboard: Gladys only logs the error, the known value goes back.
+  const lockedId = ctx.feature('EV9', F.LOCKED);
+  const before = ctx.gladys.published.filter((st) => st.featureExternalId === lockedId);
+  await assert.rejects(
+    ctx.runtime.setValue(device, { external_id: lockedId }, 0),
+    (err) => err.message === STATUS_MESSAGES.pinMissing.en,
+  );
+  const after = ctx.gladys.published.filter((st) => st.featureExternalId === lockedId);
+  assert.equal(after.length, before.length + 1);
+  assert.equal(after.at(-1).state, before.at(-1).state);
+
+  // The same refusal with a PIN saved: the PIN is wrong, not missing.
+  const withPin = await created({
+    config: { pin: '1234' },
+    client: createFakeClient({ fail: { startClimate: 'pin' } }),
+  });
+  await assert.rejects(
+    createSceneActions(withPin.runtime).start_climate({
+      fields: { device: withPin.device('EV9').external_id },
+    }),
+    { message: STATUS_MESSAGES.pin.en },
+  );
+  assert.equal(withPin.runtime.vehicleView(withPin.device('EV9').external_id).commandIssue, 'pin');
+  await ctx.runtime.stop();
+  await withPin.runtime.stop();
+});
+
+test('an accepted command clears the PIN row of the widget', async () => {
+  const fail = { lock: 'pin' };
+  const ctx = await created({ client: createFakeClient({ fail }) });
+  const id = ctx.device('EV9').external_id;
+  await assert.rejects(ctx.runtime.order(id, F.LOCKED, 1));
+  assert.equal(ctx.runtime.vehicleView(id).commandIssue, 'pinMissing');
+  delete fail.lock;
+  await ctx.runtime.order(id, F.LOCKED, 1);
+  assert.equal(ctx.runtime.vehicleView(id).commandIssue, null);
+  await ctx.runtime.drain();
+  await ctx.runtime.stop();
+});
+
+test('the connection test lists the cars and asks for the PIN, whatever the protocol', async () => {
   const ctx = await started();
   const message = await ctx.runtime.testConnection();
   assert.match(message.en, /^Connected: 4 vehicle\(s\)/);
   assert.match(message.fr, /code PIN/);
+  // Only cars of the original protocol: the PIN is still asked for.
+  const original = await started({
+    client: createFakeClient({ vehicles: VEHICLES.filter((v) => !v.ccuCCS2ProtocolSupport) }),
+  });
+  assert.match((await original.runtime.testConnection()).en, /PIN of your account/);
   const withPin = await started({ config: { pin: '1234' } });
   assert.doesNotMatch((await withPin.runtime.testConnection()).en, /PIN/);
   await ctx.runtime.stop();
+  await original.runtime.stop();
   await withPin.runtime.stop();
+});
+
+test('the connection test throws its failures, so Gladys shows them in red', async () => {
+  // Before the configuration is saved: the test reads the saved one only.
+  const empty = setup({ config: { username: '', password: '' } });
+  await empty.runtime.start(empty.config);
+  const notSaved = await empty.runtime.testConnection().catch((err) => err);
+  assert.ok(notSaved instanceof ActionFailure);
+  // The core relays the thrown message as is: the browser picks the language.
+  assert.deepEqual(notSaved.message, STATUS_MESSAGES.notSaved);
+
+  // Not started yet (the action can arrive while the integration starts).
+  const early = setup();
+  await assert.rejects(early.runtime.testConnection(), (err) => {
+    assert.deepEqual(err.message, STATUS_MESSAGES.starting);
+    return true;
+  });
+
+  // The account refuses the sign-in.
+  const refused = await started({ client: createFakeClient({ fail: { connect: 'auth' } }) });
+  await assert.rejects(refused.runtime.testConnection(), (err) => {
+    assert.deepEqual(err.message, STATUS_MESSAGES.auth);
+    return true;
+  });
+
+  // An unknown answer of the cloud is said as such, not as "unreachable".
+  const odd = await started({ client: createFakeClient({ fail: { vehicles: 'api' } }) });
+  await assert.rejects(odd.runtime.testConnection(), (err) => {
+    assert.match(err.message.en, /^The cloud refused the request: vehicles failed/);
+    assert.match(err.message.fr, /^Le cloud a refusé la requête/);
+    return true;
+  });
+  for (const ctx of [empty, early, refused, odd]) await ctx.runtime.stop();
+});
+
+test('the real case: saved account, PIN added later with the password field left empty', async () => {
+  // The core keeps an untouched secret (sent as null) and pushes the full
+  // configuration to the integration: the password is still there.
+  const ctx = await started();
+  assert.match((await ctx.runtime.testConnection()).en, /^Connected/);
+  await ctx.runtime.reconfigure(
+    normalizeConfig({ username: 'driver@example.com', password: 'secret', pin: '1234' }),
+  );
+  const message = await ctx.runtime.testConnection();
+  assert.match(message.en, /^Connected: 4 vehicle\(s\)/);
+  assert.doesNotMatch(message.en, /PIN/);
+  // A result shown before the configuration was saved stays on screen in
+  // Gladys 5.1.4 (the page keeps it): only "Save" then a new test updates it.
+  await ctx.runtime.stop();
 });

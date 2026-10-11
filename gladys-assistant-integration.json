@@ -21,8 +21,8 @@
         "fr": "Avant de commencer"
       },
       "description": {
-        "en": "This integration signs in to your Hyundai Bluelink or Kia Connect account (Europe), like the official app. Use the account of the app where your car appears. Reading the state the car last sent never wakes it; commands and forced refreshes do. Cars of the newer generation need the 4-digit PIN of the account for commands.",
-        "fr": "Cette intégration se connecte à votre compte Hyundai Bluelink ou Kia Connect (Europe), comme l'application officielle. Utilisez le compte de l'application où apparaît votre voiture. Lire l'état que la voiture a envoyé en dernier ne la réveille jamais ; les commandes et les relevés forcés, si. Les voitures de génération récente demandent le code PIN à 4 chiffres du compte pour les commandes."
+        "en": "This integration signs in to your Hyundai Bluelink or Kia Connect account (Europe), like the official app. Use the account of the app where your car appears. Reading the state the car last sent never wakes it; commands and forced refreshes do. Remote commands (locks, climate, charging) need the 4-digit PIN of the account.",
+        "fr": "Cette intégration se connecte à votre compte Hyundai Bluelink ou Kia Connect (Europe), comme l'application officielle. Utilisez le compte de l'application où apparaît votre voiture. Lire l'état que la voiture a envoyé en dernier ne la réveille jamais ; les commandes et les relevés forcés, si. Les commandes à distance (verrouillage, climatisation, charge) demandent le code PIN à 4 chiffres du compte."
       },
       "links": [
         {
@@ -102,8 +102,8 @@
         "fr": "Code PIN (4 chiffres)"
       },
       "description": {
-        "en": "The PIN of the account, asked by the app for remote commands. Needed by the newer cars only.",
-        "fr": "Le code PIN du compte, demandé par l'application pour les commandes à distance. Nécessaire pour les voitures récentes seulement."
+        "en": "The 4-digit PIN of the account, the one the app asks for. Needed for remote commands (locks, climate, charging).",
+        "fr": "Le code PIN à 4 chiffres du compte, celui que demande l'application. Nécessaire pour les commandes à distance (verrouillage, climatisation, charge)."
       },
       "required": false
     },

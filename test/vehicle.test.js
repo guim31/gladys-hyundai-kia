@@ -6,6 +6,7 @@ import {
   buildVehicleDevice,
   chargeLimit,
   climateTemperature,
+  isCcs2,
   parseCompactTime,
   snapshotFromCcs2,
   snapshotFromStatus,
@@ -201,4 +202,12 @@ test('commands: the cloud orders, bounded values, the setpoint kept locally', ()
   assert.equal(chargeLimit(20), 50);
   assert.equal(climateTemperature(21.3), 21.5);
   assert.throws(() => chargeLimit('abc'));
+});
+
+test('CCS2: any non-zero protocol flag, as hyundai_kia_connect_api reads it', () => {
+  assert.equal(isCcs2({ ccuCCS2ProtocolSupport: 1 }), true);
+  assert.equal(isCcs2({ ccuCCS2ProtocolSupport: '2' }), true);
+  assert.equal(isCcs2({ ccuCCS2ProtocolSupport: 0 }), false);
+  assert.equal(isCcs2({ ccuCCS2ProtocolSupport: null }), false);
+  assert.equal(isCcs2({}), false);
 });
