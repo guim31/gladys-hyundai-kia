@@ -1,72 +1,72 @@
 // -----------------------------------------------------------------------------
 // Minimal in-memory stand-in for the Gladys SDK object, for unit tests.
 //
-// It reproduces the only surface the device modules rely on:
-//   - externalIds(type, platformId) -> { device, feature(key) }
-//   - publishState / publishStates   -> record calls so tests can assert them
-//   - publishCameraImage             -> record calls so tests can assert them
-//   - publishTransports              -> record calls so tests can assert them
-//   - setConnectionStatus            -> record calls so tests can assert them
-//   - publishSceneEvent              -> record calls so tests can assert them
-//   - requestWidgetRefresh           -> record calls so tests can assert them
-// This lets us test the pure "wiring" logic (discovery payloads, dispatch)
-// without a running Gladys server or a real WebSocket.
+// It reproduces the surface the integration relies on and records every call:
+//   - externalIds(type, platformId) -> { device, feature(key) } (same shape as
+//     the SDK, with the `ext:<selector>:` prefix)
+//   - devices                        -> the devices "created by the user"
+//   - publishDiscoveredDevices, publishStates, setConnectionStatus,
+//     publishSceneEvent, requestWidgetRefresh -> recorded
 // -----------------------------------------------------------------------------
 
-export function createFakeGladys() {
-  const published = [];
-  const cameraImages = [];
-  const transports = [];
-  const connectionStatuses = [];
-  const sceneEvents = [];
-  const widgetRefreshes = [];
-
-  return {
-    published,
-    cameraImages,
-    transports,
-    connectionStatuses,
-    sceneEvents,
-    widgetRefreshes,
+export function createFakeGladys({ selector = 'hyundai-kia' } = {}) {
+  const fake = {
+    discovered: [],
+    published: [],
+    connectionStatuses: [],
+    sceneEvents: [],
+    widgetRefreshes: [],
+    publishCalls: 0,
+    devices: [],
 
     externalIds(type, platformId) {
-      const device = `${type}:${platformId}`;
-      return {
-        device,
-        feature: (key) => `${device}:${key}`,
-      };
+      const device = `ext:${selector}:${type}:${platformId}`;
+      return { device, feature: (key) => `${device}:${key}` };
     },
 
-    async publishState(featureExternalId, state) {
-      published.push({ featureExternalId, state });
+    async publishDiscoveredDevices(devices) {
+      fake.discovered = structuredClone(devices);
     },
 
     async publishStates(states) {
+      if (states.length > 100) throw new Error('max 100 states per request');
+      fake.publishCalls += 1;
       for (const s of states) {
-        published.push({ featureExternalId: s.device_feature_external_id, state: s.state });
+        fake.published.push({
+          featureExternalId: s.device_feature_external_id,
+          state: s.state ?? { text: s.text },
+        });
       }
     },
 
-    async publishCameraImage(deviceExternalId, image) {
-      cameraImages.push({ deviceExternalId, image });
-    },
-
-    async publishTransports(entries) {
-      transports.push(...entries);
-    },
-
     async setConnectionStatus(connected, message) {
-      connectionStatuses.push({ connected, message });
+      fake.connectionStatuses.push({ connected, message });
     },
 
     async publishSceneEvent(key, data = {}) {
-      sceneEvents.push({ key, data });
+      fake.sceneEvents.push({ key, data });
       return { success: true };
     },
 
-    // Fire-and-forget in the SDK too: synchronous, resolves nothing.
     requestWidgetRefresh(key) {
-      widgetRefreshes.push(key);
+      fake.widgetRefreshes.push(key);
+    },
+
+    /** Simulate the user clicking "Add" on every discovered device. */
+    createAll() {
+      fake.devices = structuredClone(fake.discovered);
+      return fake.devices;
+    },
+
+    /** Last published value of a feature. */
+    last(featureExternalId) {
+      for (let i = fake.published.length - 1; i >= 0; i -= 1) {
+        if (fake.published[i].featureExternalId === featureExternalId) {
+          return fake.published[i].state;
+        }
+      }
+      return undefined;
     },
   };
+  return fake;
 }

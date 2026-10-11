@@ -1,0 +1,44 @@
+{
+  "retCode": "S",
+  "resCode": "0000",
+  "resMsg": {
+    "vehicleStatusInfo": {
+      "vehicleStatus": {
+        "time": "20240720120000",
+        "battery": {
+          "batSoc": 78
+        },
+        "engine": false,
+        "airTemp": {
+          "value": "0EH",
+          "unit": 0
+        },
+        "doorLock": false,
+        "doorOpen": {
+          "frontLeft": 0,
+          "frontRight": 0,
+          "backLeft": 0,
+          "backRight": 0
+        },
+        "trunkOpen": true,
+        "hoodOpen": false,
+        "windowOpen": {
+          "frontLeft": 0,
+          "frontRight": 0,
+          "backLeft": 0,
+          "backRight": 0
+        },
+        "airCtrlOn": false,
+        "fuelLevel": 42,
+        "dte": {
+          "value": 512,
+          "unit": 1
+        }
+      },
+      "odometer": {
+        "value": 48211,
+        "unit": 1
+      }
+    }
+  }
+}

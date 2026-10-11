@@ -1,0 +1,48 @@
+{
+  "retCode": "S",
+  "resCode": "0000",
+  "resMsg": {
+    "vehicles": [
+      {
+        "vehicleId": "00000000-0000-4000-8000-000000000001",
+        "vin": "KMHTEST0FAKE00001",
+        "nickname": "",
+        "vehicleName": "IONIQ 5",
+        "type": "EV",
+        "ccuCCS2ProtocolSupport": 0,
+        "year": "2022",
+        "master": true
+      },
+      {
+        "vehicleId": "00000000-0000-4000-8000-000000000002",
+        "vin": "KNATEST0FAKE00002",
+        "nickname": "Family EV9",
+        "vehicleName": "EV9",
+        "type": "EV",
+        "ccuCCS2ProtocolSupport": 1,
+        "year": "2024",
+        "master": true
+      },
+      {
+        "vehicleId": "00000000-0000-4000-8000-000000000003",
+        "vin": "KNATEST0FAKE00003",
+        "nickname": "",
+        "vehicleName": "Sportage",
+        "type": "PE",
+        "ccuCCS2ProtocolSupport": 1,
+        "year": "2027",
+        "master": true
+      },
+      {
+        "vehicleId": "00000000-0000-4000-8000-000000000004",
+        "vin": "KMHTEST0FAKE00004",
+        "nickname": "Old i30",
+        "vehicleName": "i30",
+        "type": "GN",
+        "ccuCCS2ProtocolSupport": 0,
+        "year": "2019",
+        "master": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,244 @@
+{
+  "retCode": "S",
+  "resCode": "0000",
+  "resMsg": {
+    "state": {
+      "Vehicle": {
+        "Offset": 1,
+        "Date": "20240915140000",
+        "DrivingReady": false,
+        "Drivetrain": {
+          "Odometer": 5200,
+          "FuelSystem": {
+            "DTE": {
+              "Total": 290,
+              "Unit": 1
+            },
+            "FuelLevel": 0,
+            "LowFuelWarning": false
+          }
+        },
+        "Electronics": {
+          "Battery": {
+            "Level": 88
+          },
+          "FOB": {
+            "LowBattery": false
+          }
+        },
+        "Cabin": {
+          "HVAC": {
+            "Row1": {
+              "Driver": {
+                "Temperature": {
+                  "Value": 22.0
+                },
+                "Blower": {
+                  "SpeedLevel": 0
+                }
+              }
+            }
+          },
+          "SteeringWheel": {
+            "Heat": {
+              "State": false
+            }
+          },
+          "Seat": {
+            "Row1": {
+              "Driver": {
+                "Climate": {
+                  "State": 0
+                }
+              },
+              "Passenger": {
+                "Climate": {
+                  "State": 0
+                }
+              }
+            },
+            "Row2": {
+              "Left": {
+                "Climate": {
+                  "State": 0
+                }
+              },
+              "Right": {
+                "Climate": {
+                  "State": 0
+                }
+              }
+            }
+          },
+          "Door": {
+            "Row1": {
+              "Driver": {
+                "Open": false,
+                "Lock": false
+              },
+              "Passenger": {
+                "Open": false,
+                "Lock": false
+              }
+            },
+            "Row2": {
+              "Left": {
+                "Open": false,
+                "Lock": false
+              },
+              "Right": {
+                "Open": false,
+                "Lock": false
+              }
+            }
+          },
+          "Window": {
+            "Row1": {
+              "Driver": {
+                "Open": 0
+              },
+              "Passenger": {
+                "Open": 0
+              }
+            },
+            "Row2": {
+              "Left": {
+                "Open": 0
+              },
+              "Right": {
+                "Open": 0
+              }
+            }
+          }
+        },
+        "Body": {
+          "Hood": {
+            "Open": false
+          },
+          "Trunk": {
+            "Open": false
+          },
+          "Sunroof": {
+            "Glass": {
+              "Open": 0
+            }
+          },
+          "Windshield": {
+            "Front": {
+              "Defog": {
+                "State": false
+              },
+              "WasherFluid": {
+                "LevelLow": false
+              }
+            },
+            "Rear": {
+              "Defog": {
+                "State": false
+              }
+            }
+          }
+        },
+        "Chassis": {
+          "Axle": {
+            "Tire": {
+              "PressureLow": false
+            },
+            "Row1": {
+              "Left": {
+                "Tire": {
+                  "PressureLow": false
+                }
+              },
+              "Right": {
+                "Tire": {
+                  "PressureLow": false
+                }
+              }
+            },
+            "Row2": {
+              "Left": {
+                "Tire": {
+                  "PressureLow": false
+                }
+              },
+              "Right": {
+                "Tire": {
+                  "PressureLow": false
+                }
+              }
+            }
+          },
+          "Brake": {
+            "Fluid": {
+              "Warning": false
+            }
+          }
+        },
+        "Green": {
+          "BatteryManagement": {
+            "BatteryRemain": {
+              "Ratio": 71,
+              "Value": 54.5
+            },
+            "BatteryCapacity": {
+              "Value": 76.0
+            },
+            "SoH": {
+              "Ratio": 98
+            }
+          },
+          "ChargingInformation": {
+            "TargetSoC": {
+              "Standard": 100,
+              "Quick": 80
+            },
+            "ElectricCurrentLevel": {
+              "State": 0
+            },
+            "ConnectorFastening": {
+              "State": false
+            },
+            "Charging": {
+              "RemainTime": 0
+            },
+            "EstimatedTime": {
+              "Standard": 0,
+              "ICCB": 0,
+              "Quick": 0
+            },
+            "DTE": {
+              "TargetSoC": {
+                "Standard": 408,
+                "Quick": 326
+              }
+            }
+          },
+          "ChargingDoor": {
+            "State": 0
+          },
+          "Electric": {
+            "SmartGrid": {
+              "RealTimePower": 0.0,
+              "VehicleToLoad": {
+                "DischargeLimitation": {
+                  "SoC": 20
+                }
+              }
+            }
+          },
+          "Reservation": {
+            "Departure": {
+              "Schedule1": {
+                "Enable": false
+              },
+              "Schedule2": {
+                "Enable": false
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,65 +1,98 @@
-# Template de démonstration
+# Hyundai / Kia
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+Suivez et pilotez votre Hyundai ou votre Kia depuis Gladys, par le cloud des
+applications officielles (**Bluelink** pour Hyundai, **Kia Connect** pour Kia),
+pour les comptes européens seulement pour l'instant.
 
 ## Ce que vous obtenez
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+Un appareil Gladys par voiture du compte, avec :
+
+- **Voitures électriques et hybrides rechargeables** : niveau de batterie,
+  autonomie électrique, état de charge, branchée, lancer / arrêter la charge,
+  limites de charge AC et DC, temps restant avant la fin de la charge.
+- **Toutes les voitures** : autonomie (autonomie totale pour une hybride ou une
+  thermique), climatisation marche / arrêt avec sa consigne, portes
+  verrouillées / déverrouillées (verrouiller et déverrouiller), portière ou
+  coffre ouvert, fenêtre ouverte, kilométrage, batterie 12 V, moteur allumé.
+- **Voitures récentes** (2024 et après, comme l'EV9 ou l'IONIQ 5 restylée) :
+  la température extérieure en plus.
+
+Un widget de tableau de bord **Véhicule** affiche la batterie, l'autonomie,
+l'état de la charge et de la climatisation, les portes et le dernier relevé,
+avec des boutons pour la climatisation, la charge, le verrouillage et une
+actualisation. Deux actions de scène sont disponibles : **Actualiser un véhicule
+Hyundai / Kia** (renvoie le niveau de batterie et l'autonomie) et **Lancer la clim
+d'une Hyundai / Kia** (température et durée réglables dans la scène).
 
 ## Configuration
 
-1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+1. Vérifiez que la voiture fonctionne dans l'application officielle (Bluelink
+   ou Kia Connect) et que vous avez accepté ses dernières conditions.
+2. Dans Gladys, ouvrez l'intégration, choisissez la **marque**, puis saisissez
+   l'**adresse e-mail** et le **mot de passe** du compte.
+3. Saisissez le **code PIN** (4 chiffres) du compte si votre voiture est
+   récente : les voitures récentes refusent toute commande sans lui. Les plus
+   anciennes n'en ont pas besoin.
+4. Choisissez la **langue du compte** (celle du compte de l'application) et
+   enregistrez.
+5. Cliquez sur **Tester la connexion** : les voitures du compte s'affichent.
+6. Dans l'onglet **Découverte**, ajoutez votre voiture à Gladys.
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+**Jeton de rafraîchissement à la place du mot de passe** : si la connexion
+échoue sans cesse, vous pouvez coller dans le champ mot de passe un jeton de
+rafraîchissement de 48 caractères (obtenu avec les outils du projet
+hyundai_kia_connect_api).
 
-## Actions
+Le mot de passe, le PIN et les jetons ne quittent le conteneur que vers le
+cloud Hyundai / Kia, et ne sont jamais écrits dans les journaux. Les jetons de
+session sont conservés dans `/data`.
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+## Fraîcheur des données
 
-## Scènes
+Par défaut, l'intégration lit **le dernier état que la voiture a envoyé au
+cloud** toutes les 30 minutes (15, 30 ou 60). Cette lecture ne réveille pas la
+voiture : elle envoie son état d'elle-même à l'arrêt, au branchement, ou après
+une commande.
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+L'**actualisation forcée** demande son état à la voiture elle-même. Elle
+réveille son modem et puise dans sa batterie 12 V, et le cloud limite le nombre
+de requêtes par jour. Elle est **désactivée par défaut** ; une fois activée
+(toutes les 2, 4, 8 ou 12 heures), elle ne s'exécute jamais entre 22 h et 6 h
+ni moteur allumé. Le bouton **Actualiser** du widget et l'action de scène
+**Actualiser un véhicule Hyundai / Kia** forcent une lecture à tout moment.
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+## Commandes
 
-## Tableau de bord
+Une commande passe par le cloud jusqu'à la voiture, ce qui peut prendre de
+quelques secondes à deux minutes. Gladys affiche la valeur attendue dès que la
+voiture la confirme ; si la voiture ne répond pas, l'état réel revient au
+relevé suivant.
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+- **Climatisation** : démarre à la consigne (16 à 30 °C, gardée par
+  l'intégration, 21 °C par défaut) pour la durée choisie dans la configuration.
+- **Limites de charge** : de 50 à 100 % par pas de 10.
+- **Déverrouiller** : le widget demande d'abord une confirmation.
+
+## Limites
+
+- Comptes européens seulement (ni Amérique du Nord, ni Chine, ni Australie, ni
+  Inde).
+- Développée sans voiture ni compte réels : merci de signaler ce qui marche et
+  ce qui ne marche pas sur le forum Gladys.
+- Rien de la position de la voiture n'est lu ni publié.
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+- **« Le compte a refusé la connexion »** : vérifiez la marque, l'adresse
+  e-mail et le mot de passe.
+- **« Votre compte demande d'accepter de nouvelles conditions »** : ouvrez
+  l'application officielle, connectez-vous, acceptez, puis enregistrez à
+  nouveau la configuration.
+- **« Les pages de connexion ont refusé la connexion »** : trop de connexions
+  en peu de temps ; patientez quelques heures avant d'enregistrer à nouveau.
+- **« Cette voiture demande le code PIN »** : saisissez le PIN du compte dans
+  la configuration.
+- **« Le quota quotidien de requêtes est épuisé »** : l'intégration fait une
+  pause d'une heure ; réduisez la fréquence des relevés ou désactivez
+  l'actualisation forcée.
