@@ -71,7 +71,7 @@ jobs:
           persist-credentials: false # no git push here
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # Same build as build.yml, without pushing, and for amd64 only: emulating
       # arm64 is slow, and only the release build needs it.
