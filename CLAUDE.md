@@ -16,8 +16,8 @@ its only runtime dependency. It started from the official JavaScript template.
 ```bash
 npm install
 npm test                                  # node --test, the built-in runner
-node --test test/devices.test.js          # one file
-node --test --test-name-pattern "plug"    # tests whose name matches
+node --test test/vehicle.test.js          # one file
+node --test --test-name-pattern "CCS2"    # tests whose name matches
 npm run lint                              # ESLint
 npm run format:check                      # Prettier, as the CI runs it
 npm run format                            # Prettier, fix in place
@@ -32,15 +32,20 @@ pushing.
 
 ```
 index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
-src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+src/hyundaiKia.js                 runtime: cars, reads (cached / forced), commands, overrides, errors
+src/bluelink/auth.js              EU sign-in (CCI OneApp, 5 steps) or legacy refresh token, Stamp
+src/bluelink/client.js            CCAPI calls: vehicles, status (original / CCS2), commands, results
+src/bluelink/http.js, errors.js   fetch wrapper; cloud error codes -> error kinds
+src/bluelink/constants.js         per-brand app ids, hosts and keys (from hyundai_kia_connect_api)
+src/devices/vehicle.js            raw status -> snapshot, Gladys device, states, commands
+src/store.js                      /data/hyundai-kia.json: tokens + per-car state (0600, atomic)
+src/scenes.js                     scene actions refresh_vehicle, start_climate
+src/widgets.js                    dashboard widget `vehicle`
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
 docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test; test/helpers/fakeGladys.js stands in for the SDK
+test/                             node --test; helpers/ fake Gladys, fake fetch, fake Bluelink client
+test/fixtures/bluelink/           cloud answers (adapted from hyundai_kia_connect_api, anonymized)
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -176,6 +181,36 @@ code de ce dépôt. Compléter ce fichier quand un nouveau piège est découvert
 - Les filtres de scène ne font qu'égalité et appartenance : un seuil reste le travail d'un capteur.
 - **Les clés de widgets, de déclencheurs et d'actions sont figées une fois publiées.**
 - `gladys_version` `>=5.1.0` dès qu'il y a widgets, déclencheurs ou actions de scène.
+
+## Hyundai / Kia (Europe)
+
+- Protocole repris de `hyundai_kia_connect_api` (MIT, `THIRD_PARTY_NOTICES.md`) : hôtes, app ids,
+  clés `cfb` du header `Stamp`, codes d'erreur. Aucune réponse réelle n'a été capturée ici : le
+  proxy des sessions de code n'a ni compte ni voiture. Les fixtures viennent des tests de cette
+  bibliothèque, anonymisées (VIN, ids et position retirés).
+- **Connexion** : l'ancien login par formulaire est mort ; l'UE passe par le parcours CCI
+  « OneApp » (authorize, clé RSA publique, `signin` avec mot de passe chiffré, échange du code,
+  `token-exchange?serviceType=CCS`). Une redirection vers `/web/v1/user/authorization` = conditions
+  à accepter dans l'appli ; une page « Your request was rejected » = pare-feu (trop de connexions).
+  Ces deux cas et un refus d'identifiants **arrêtent tout** jusqu'au prochain enregistrement de la
+  configuration : réessayer ferait bloquer le compte. Un jeton de rafraîchissement « legacy » de
+  48 caractères dans le champ mot de passe court-circuite le formulaire.
+- Les jetons tournent et vivent dans `/data/hyundai-kia.json` (0600, écriture atomique), jamais
+  dans la configuration ni les journaux. Un `deviceId` refusé (4002) est réenregistré.
+- **Deux protocoles**, choisis par `ccuCCS2ProtocolSupport` de la liste des voitures :
+  l'ancien (`vehicleStatus`, heure en **heure de Berlin**) et CCS2 (arbre `Vehicle`, `Date` en UTC,
+  parfois suffixée `.000`). Sur CCS2, `Door.*.Lock: false` veut dire **verrouillée**, et une
+  batterie 12 V avec `SensorReliability: 1` ou hors 0–100 est inconnue, pas 0 %.
+- Les commandes CCS2 exigent un jeton de contrôle obtenu par le **PIN** du compte
+  (`PUT /api/v1/user/pin`, mis en cache) ; l'ancien protocole n'en veut pas. Le résultat d'une
+  commande se lit dans les notifications (`records`), pas dans sa réponse.
+- Lecture « en cache » (dernier état envoyé par la voiture) sans réveil ; lecture **forcée** =
+  réveil du modem, 12 V et quota quotidien (5091) : désactivée par défaut, jamais de 22 h à 6 h ni
+  moteur allumé. Quota épuisé : pause d'une heure.
+- Après une commande confirmée, ses valeurs restent publiées jusqu'à un état de la voiture daté
+  d'après la commande : l'état « en cache » est souvent plus vieux et ferait clignoter Gladys.
+- La consigne de climatisation n'existe pas dans le cloud : elle est gardée dans `/data`.
+- La position GPS n'est **jamais** lue ni publiée (dépôt public, vie privée).
 
 ## Store
 

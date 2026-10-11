@@ -1,41 +1,45 @@
 // -----------------------------------------------------------------------------
-// Scene actions (SDK v0.14+, Gladys 5.1+).
+// Scene actions (manifest `scene_actions`, SDK v0.14+, Gladys 5.1+).
 //
-// A scene action is an OPERATION a scene author places in a scene, with
-// parameters and a result: "identify this device", "take a snapshot", "clean
-// these rooms". Each one is declared in the manifest `scene_actions` field
-// (key, label, `fields` in the config_schema grammar, scalar `outputs`) and
-// handled here, keyed by that same `key`; index.js registers every entry with
-// `gladys.onSceneAction(key, ...)`.
+// What a scene can already do through the device features (start charging,
+// set a charge limit, lock...) is not repeated here: only what no feature
+// carries.
+//   - `refresh_vehicle` wakes the car and reads its state, for a scene that
+//     must decide on fresh values (the cached state can be hours old);
+//   - `start_climate` starts the climate with its own temperature and
+//     duration, without changing the setpoint kept for the dashboard.
 //
-// Scene TRIGGERS are the other direction ("this happened"): they are fired by
-// the device that observes the event, see src/devices/motionSensor.js.
-//
-// The rules that matter:
-//   - `fields` arrive RESOLVED: scene variables substituted, defaults applied,
-//     validated by the core; a `"source": "devices"` field is the chosen
-//     device external_id;
-//   - resolve an object of the declared `outputs` (scalars only), readable by
-//     the following actions of the scene, or `undefined` for none. Keys not
-//     declared in the manifest are dropped by the core;
-//   - throwing fails THIS action only: the scene logs it and continues. A
-//     scene action is never a condition: return an output and let the scene
-//     author gate on it;
-//   - never fire a scene event as a consequence of a received action: a scene
-//     bound to that event would loop through the integration.
+// Fields arrive resolved and validated by the core, without defaults (a
+// manifest default is not applied to an action): every field is optional
+// here. Throwing fails this action only, the scene goes on.
 // -----------------------------------------------------------------------------
 
-import { createLogger } from '@gladysassistant/integration-sdk';
-import { signalDevice } from './devices/index.js';
+import { round } from './units.js';
 
-const logger = createLogger({ name: 'scenes' });
-
-export const SCENE_ACTIONS = {
-  // The ack is awaited under the action's `timeout_seconds` (15 s in the
-  // manifest), counted from the moment the scene reaches the action.
-  async identify_device(gladys, { fields, config }) {
-    logger.info(`Scene action identify_device <- ${fields.device}`);
-    const signalled = await signalDevice(gladys, fields.device, config);
-    return { signalled };
-  },
+export const SCENE_ACTION_KEYS = {
+  REFRESH_VEHICLE: 'refresh_vehicle',
+  START_CLIMATE: 'start_climate',
 };
+
+export function createSceneActions(runtime) {
+  return {
+    async [SCENE_ACTION_KEYS.REFRESH_VEHICLE]({ fields }) {
+      const snapshot = await runtime.forceRefresh(fields.device);
+      const outputs = {};
+      if (Number.isFinite(snapshot.evBattery)) outputs.battery_level = round(snapshot.evBattery);
+      const range = Number.isFinite(snapshot.evRangeKm)
+        ? snapshot.evRangeKm
+        : snapshot.totalRangeKm;
+      if (Number.isFinite(range)) outputs.range_km = round(range);
+      return outputs;
+    },
+
+    async [SCENE_ACTION_KEYS.START_CLIMATE]({ fields }) {
+      const { temperature } = await runtime.startClimate(fields.device, {
+        temperature: fields.temperature,
+        duration: fields.duration,
+      });
+      return { temperature };
+    },
+  };
+}

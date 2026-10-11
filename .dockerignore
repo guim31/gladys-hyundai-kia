@@ -4,7 +4,7 @@ npm-debug.log*
 .github
 .env
 .env.*
-data
+/data
 *.log
 .DS_Store
 README.md
