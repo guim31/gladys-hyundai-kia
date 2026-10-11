@@ -10,6 +10,23 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Test the connection** shows its failures in red: they were shown in green
+  as if the test had passed.
+- Its message when no account is saved now says to save the configuration
+  first: the test checks the saved configuration, not the form being edited.
+- A command refused for want of the PIN is now visible: red message on the
+  widget button, a **Commands** line in the widget, and the known value put
+  back on the dashboard. Missing and refused PIN are told apart.
+- A widget command the car reports as failed is shown in red.
+
+### Changed
+
+- The PIN is asked for remote commands whatever the car (the connection test,
+  the configuration and the documentation no longer say "newer cars only").
+- Tested on a Hyundai IONIQ 5 (European account): sign-in and unlocking.
+
 ## [1.0.1] - 2026-10-11
 
 ### Added

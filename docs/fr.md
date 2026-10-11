@@ -31,12 +31,15 @@ d'une Hyundai / Kia** (température et durée réglables dans la scène).
    ou Kia Connect) et que vous avez accepté ses dernières conditions.
 2. Dans Gladys, ouvrez l'intégration, choisissez la **marque**, puis saisissez
    l'**adresse e-mail** et le **mot de passe** du compte.
-3. Saisissez le **code PIN** (4 chiffres) du compte si votre voiture est
-   récente : les voitures récentes refusent toute commande sans lui. Les plus
-   anciennes n'en ont pas besoin.
+3. Saisissez le **code PIN** (4 chiffres) du compte : il est nécessaire pour
+   les commandes à distance (verrouillage, climatisation, charge). Sans lui, la
+   voiture reste suivie.
 4. Choisissez la **langue du compte** (celle du compte de l'application) et
-   enregistrez.
-5. Cliquez sur **Tester la connexion** : les voitures du compte s'affichent.
+   **enregistrez**.
+5. Cliquez sur **Tester la connexion** : les voitures du compte s'affichent. Le
+   test utilise la configuration enregistrée, pas le formulaire en cours de
+   saisie : enregistrez d'abord. Un résultat reste affiché sous le bouton
+   jusqu'au test suivant.
 6. Dans l'onglet **Découverte**, ajoutez votre voiture à Gladys.
 
 **Jeton de rafraîchissement à la place du mot de passe** : si la connexion
@@ -67,7 +70,9 @@ ni moteur allumé. Le bouton **Actualiser** du widget et l'action de scène
 Une commande passe par le cloud jusqu'à la voiture, ce qui peut prendre de
 quelques secondes à deux minutes. Gladys affiche la valeur attendue dès que la
 voiture la confirme ; si la voiture ne répond pas, l'état réel revient au
-relevé suivant.
+relevé suivant. Une commande refusée remet aussitôt la valeur connue ; le widget
+affiche alors la raison en rouge (et une ligne **Commandes** quand le PIN manque
+ou est refusé), et l'intégration la note dans ses journaux.
 
 - **Climatisation** : démarre à la consigne (16 à 30 °C, gardée par
   l'intégration, 21 °C par défaut) pour la durée choisie dans la configuration.
@@ -78,8 +83,8 @@ relevé suivant.
 
 - Comptes européens seulement (ni Amérique du Nord, ni Chine, ni Australie, ni
   Inde).
-- Développée sans voiture ni compte réels : merci de signaler ce qui marche et
-  ce qui ne marche pas sur le forum Gladys.
+- Testée sur une Hyundai IONIQ 5 (compte européen) : connexion et
+  déverrouillage ; le reste attend vos retours sur le forum Gladys.
 - Rien de la position de la voiture n'est lu ni publié.
 
 ## Dépannage
@@ -91,8 +96,12 @@ relevé suivant.
   nouveau la configuration.
 - **« Les pages de connexion ont refusé la connexion »** : trop de connexions
   en peu de temps ; patientez quelques heures avant d'enregistrer à nouveau.
-- **« Cette voiture demande le code PIN »** : saisissez le PIN du compte dans
-  la configuration.
+- **« Saisissez le code PIN de votre compte »** : saisissez le PIN du compte
+  dans la configuration de l'intégration, puis enregistrez.
+- **« Le code PIN de votre compte a été refusé »** : vérifiez le PIN (celui que
+  l'application officielle demande pour les commandes), puis enregistrez.
+- **« Aucun compte n'est encore enregistré »** après **Tester la connexion** :
+  enregistrez la configuration, puis testez à nouveau.
 - **« Le quota quotidien de requêtes est épuisé »** : l'intégration fait une
   pause d'une heure ; réduisez la fréquence des relevés ou désactivez
   l'actualisation forcée.

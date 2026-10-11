@@ -29,10 +29,14 @@ climate of a Hyundai / Kia** (temperature and duration can be set in the scene).
    that you accepted its latest terms.
 2. In Gladys, open the integration, choose the **brand**, then enter the
    **e-mail address** and **password** of the account.
-3. Enter the **PIN** (4 digits) of the account if your car is recent: newer
-   cars refuse any command without it. Older cars do not need it.
-4. Choose the **account language** (the language of the app account) and save.
-5. Click **Test the connection**: the cars of the account are listed.
+3. Enter the **PIN** (4 digits) of the account: it is needed for remote
+   commands (locks, climate, charging). Without it, the car can still be
+   followed.
+4. Choose the **account language** (the language of the app account) and
+   **save**.
+5. Click **Test the connection**: the cars of the account are listed. The test
+   uses the saved configuration, not the form being edited: save first. A
+   result stays under the button until the next test.
 6. In the **Discover** tab, add your car to Gladys.
 
 **Refresh token instead of the password**: if the sign-in keeps failing, you
@@ -60,7 +64,10 @@ read at any time.
 
 A command goes through the cloud to the car, which can take from a few seconds
 to two minutes. Gladys shows the expected value once the car confirms it; if
-the car does not answer, the real state comes back with the next read.
+the car does not answer, the real state comes back with the next read. A
+refused command puts the known value back at once; the widget then shows the
+reason in red (and a **Commands** line when the PIN is missing or refused), and
+the integration logs it.
 
 - **Climate**: starts with the set temperature (16 to 30 °C, kept by the
   integration, 21 °C by default) for the duration chosen in the configuration.
@@ -70,8 +77,8 @@ the car does not answer, the real state comes back with the next read.
 ## Limits
 
 - European accounts only (not North America, China, Australia or India).
-- Developed without a real car or a real account: please report what works and
-  what does not on the Gladys forum.
+- Tested on a Hyundai IONIQ 5 (European account): sign-in and unlocking; the
+  rest awaits your feedback on the Gladys forum.
 - Nothing about the car's position is read or published.
 
 ## Troubleshooting
@@ -81,7 +88,11 @@ the car does not answer, the real state comes back with the next read.
   in, accept, then save the configuration again.
 - **"The sign-in pages refused the connection"**: too many sign-ins in a short
   time; wait a few hours before saving again.
-- **"This car needs the PIN"**: enter the PIN of the account in the
-  configuration.
+- **"Enter the PIN of your account"**: enter the PIN of the account in the
+  configuration of the integration, then save.
+- **"The PIN of your account was refused"**: check the PIN (the one the
+  official app asks for commands), then save.
+- **"No account is saved yet"** after **Test the connection**: save the
+  configuration, then test again.
 - **"The daily request quota is spent"**: the integration pauses for an hour;
   lower the refresh frequency or turn the forced refresh off.
