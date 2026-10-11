@@ -1,6 +1,6 @@
 {
   "name": "gladys-hyundai-kia",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Gladys Assistant integration for Hyundai Bluelink and Kia Connect cars (Europe).",
   "type": "module",

@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-11
+
 ### Added
 
 - Hyundai Bluelink and Kia Connect (Europe): one device per car with battery,
@@ -22,4 +24,5 @@ the notes of the version's GitHub Release.
 - Dashboard widget `vehicle`, scene actions `refresh_vehicle` and
   `start_climate`, and a **Test the connection** action.
 
-[Unreleased]: https://github.com/guim31/gladys-hyundai-kia/commits/main
+[Unreleased]: https://github.com/guim31/gladys-hyundai-kia/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/guim31/gladys-hyundai-kia/releases/tag/v1.0.1
