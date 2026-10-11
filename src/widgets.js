@@ -16,9 +16,11 @@ import { ACTION_RESULTS } from './bluelink/constants.js';
 import { STATUS_MESSAGES, WIDGET_KEYS } from './hyundaiKia.js';
 import { round } from './units.js';
 
-const pickDevice = {
+export const pickDevice = {
   en: 'Choose a vehicle in the widget settings.',
   fr: 'Choisissez un véhicule dans les réglages du widget.',
+  de: 'Wähle in den Widget-Einstellungen ein Fahrzeug.',
+  es: 'Elija un vehículo en los ajustes del widget.',
 };
 
 function message(text) {
@@ -39,11 +41,11 @@ export function formatUpdated(ms, timeZone) {
       minute: '2-digit',
       ...(timeZone ? { timeZone } : {}),
     }).format(new Date(ms));
-  return { en: format('en-GB'), fr: format('fr-FR') };
+  return { en: format('en-GB'), fr: format('fr-FR'), de: format('de-DE'), es: format('es-ES') };
 }
 
 function chargeRow(snapshot) {
-  const label = { en: 'Charging', fr: 'Charge' };
+  const label = { en: 'Charging', fr: 'Charge', de: 'Laden', es: 'Carga' };
   if (snapshot.charging === true) {
     const minutes = snapshot.chargeRemainingMin;
     const left =
@@ -51,15 +53,17 @@ function chargeRow(snapshot) {
         ? {
             en: `Charging, ${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')} left`,
             fr: `En charge, reste ${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}`,
+            de: `Lädt, noch ${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}`,
+            es: `Cargando, quedan ${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}`,
           }
-        : { en: 'Charging', fr: 'En charge' };
+        : { en: 'Charging', fr: 'En charge', de: 'Lädt', es: 'Cargando' };
     return { label, icon: 'zap', value: left, color: WIDGET_COLORS.SUCCESS };
   }
   if (snapshot.plugged === true) {
     return {
       label,
       icon: 'battery',
-      value: { en: 'Plugged in', fr: 'Branchée' },
+      value: { en: 'Plugged in', fr: 'Branchée', de: 'Angeschlossen', es: 'Enchufado' },
       color: WIDGET_COLORS.INFO,
     };
   }
@@ -67,7 +71,7 @@ function chargeRow(snapshot) {
     return {
       label,
       icon: 'battery',
-      value: { en: 'Unplugged', fr: 'Débranchée' },
+      value: { en: 'Unplugged', fr: 'Débranchée', de: 'Nicht angeschlossen', es: 'Desenchufado' },
       color: WIDGET_COLORS.NEUTRAL,
     };
   }
@@ -75,9 +79,19 @@ function chargeRow(snapshot) {
 }
 
 // Status row of a command refusal the user must fix (40 characters at most).
-const COMMAND_ISSUES = {
-  pinMissing: { en: 'PIN to enter in the configuration', fr: 'Code PIN à saisir (configuration)' },
-  pin: { en: 'PIN refused, check the configuration', fr: 'Code PIN refusé (configuration)' },
+export const COMMAND_ISSUES = {
+  pinMissing: {
+    en: 'PIN to enter in the configuration',
+    fr: 'Code PIN à saisir (configuration)',
+    de: 'PIN in der Konfiguration eingeben',
+    es: 'Introduzca el PIN (configuración)',
+  },
+  pin: {
+    en: 'PIN refused, check the configuration',
+    fr: 'Code PIN refusé (configuration)',
+    de: 'PIN abgelehnt, Konfiguration prüfen',
+    es: 'PIN rechazado, revise la configuración',
+  },
 };
 
 function vehicleContent(view, { timeZone } = {}) {
@@ -104,14 +118,14 @@ function vehicleContent(view, { timeZone } = {}) {
     ? [
         tile(
           VEHICLE_FEATURES.BATTERY_LEVEL,
-          { en: 'Battery', fr: 'Batterie' },
+          { en: 'Battery', fr: 'Batterie', de: 'Batterie', es: 'Batería' },
           'battery',
           round(snapshot.evBattery),
           '%',
         ),
         tile(
           VEHICLE_FEATURES.RANGE,
-          { en: 'Range', fr: 'Autonomie' },
+          { en: 'Range', fr: 'Autonomie', de: 'Reichweite', es: 'Autonomía' },
           'navigation',
           toUnit(snapshot.evRangeKm),
           distanceUnit,
@@ -120,14 +134,14 @@ function vehicleContent(view, { timeZone } = {}) {
     : [
         tile(
           VEHICLE_FEATURES.RANGE,
-          { en: 'Range', fr: 'Autonomie' },
+          { en: 'Range', fr: 'Autonomie', de: 'Reichweite', es: 'Autonomía' },
           'navigation',
           toUnit(snapshot.totalRangeKm),
           distanceUnit,
         ),
         tile(
           VEHICLE_FEATURES.ODOMETER,
-          { en: 'Odometer', fr: 'Kilométrage' },
+          { en: 'Odometer', fr: 'Kilométrage', de: 'Kilometerstand', es: 'Kilometraje' },
           'activity',
           toUnit(snapshot.odometerKm),
           distanceUnit,
@@ -137,7 +151,7 @@ function vehicleContent(view, { timeZone } = {}) {
   const items = [];
   if (electric) {
     items.push(chargeRow(snapshot), {
-      label: { en: 'Charge limit', fr: 'Limite de charge' },
+      label: { en: 'Charge limit', fr: 'Limite de charge', de: 'Ladelimit', es: 'Límite de carga' },
       icon: 'sliders',
       value: percent(snapshot.chargeLimitAc),
       color: WIDGET_COLORS.NEUTRAL,
@@ -145,50 +159,67 @@ function vehicleContent(view, { timeZone } = {}) {
   }
   items.push(
     {
-      label: { en: 'Climate', fr: 'Climatisation' },
+      label: { en: 'Climate', fr: 'Climatisation', de: 'Klimatisierung', es: 'Climatización' },
       icon: 'wind',
       value: onOff(
         snapshot.climateOn,
-        { en: 'On', fr: 'En marche' },
+        { en: 'On', fr: 'En marche', de: 'Ein', es: 'Encendida' },
         {
           en: `Off (set to ${snapshot.targetTempC} °C)`,
           fr: `Arrêtée (consigne ${String(snapshot.targetTempC).replace('.', ',')} °C)`,
+          de: `Aus (Soll ${String(snapshot.targetTempC).replace('.', ',')} °C)`,
+          es: `Apagada (consigna ${String(snapshot.targetTempC).replace('.', ',')} °C)`,
         },
       ),
       color: snapshot.climateOn ? WIDGET_COLORS.SUCCESS : WIDGET_COLORS.NEUTRAL,
     },
     {
-      label: { en: 'Doors', fr: 'Portes' },
+      label: { en: 'Doors', fr: 'Portes', de: 'Türen', es: 'Puertas' },
       icon: snapshot.locked === false ? 'unlock' : 'lock',
       value: onOff(
         snapshot.locked,
-        { en: 'Locked', fr: 'Verrouillées' },
-        { en: 'Unlocked', fr: 'Déverrouillées' },
+        { en: 'Locked', fr: 'Verrouillées', de: 'Verriegelt', es: 'Bloqueadas' },
+        { en: 'Unlocked', fr: 'Déverrouillées', de: 'Entriegelt', es: 'Desbloqueadas' },
       ),
       color: snapshot.locked === false ? WIDGET_COLORS.WARNING : WIDGET_COLORS.SUCCESS,
     },
   );
   if (snapshot.doorOpen === true || snapshot.windowOpen === true) {
     items.push({
-      label: { en: 'Openings', fr: 'Ouvrants' },
+      label: { en: 'Openings', fr: 'Ouvrants', de: 'Öffnungen', es: 'Aperturas' },
       icon: 'alert-triangle',
       value:
         snapshot.doorOpen === true
-          ? { en: 'Door, trunk or hood open', fr: 'Portière, coffre ou capot ouvert' }
-          : { en: 'Window open', fr: 'Fenêtre ouverte' },
+          ? {
+              en: 'Door, trunk or hood open',
+              fr: 'Portière, coffre ou capot ouvert',
+              de: 'Tür, Kofferraum oder Motorhaube offen',
+              es: 'Puerta, maletero o capó abierto',
+            }
+          : {
+              en: 'Window open',
+              fr: 'Fenêtre ouverte',
+              de: 'Fenster offen',
+              es: 'Ventanilla abierta',
+            },
       color: WIDGET_COLORS.WARNING,
     });
   }
   if (COMMAND_ISSUES[commandIssue]) {
     items.push({
-      label: { en: 'Commands', fr: 'Commandes' },
+      label: { en: 'Commands', fr: 'Commandes', de: 'Befehle', es: 'Comandos' },
       icon: 'alert-octagon',
       value: COMMAND_ISSUES[commandIssue],
       color: WIDGET_COLORS.DANGER,
     });
   }
   items.push({
-    label: { en: 'Last update', fr: 'Dernier relevé' },
+    label: {
+      en: 'Last update',
+      fr: 'Dernier relevé',
+      de: 'Letzte Abfrage',
+      es: 'Última actualización',
+    },
     icon: 'clock',
     value: formatUpdated(snapshot.updatedAt, timeZone),
     color: WIDGET_COLORS.NEUTRAL,
@@ -200,13 +231,13 @@ function vehicleContent(view, { timeZone } = {}) {
     snapshot.climateOn
       ? {
           type: 'button',
-          label: { en: 'Stop climate', fr: 'Arrêter la clim' },
+          label: { en: 'Stop climate', fr: 'Arrêter la clim', de: 'Klima aus', es: 'Parar clima' },
           icon: 'wind',
           action: { key: 'climate_off' },
         }
       : {
           type: 'button',
-          label: { en: 'Start climate', fr: 'Lancer la clim' },
+          label: { en: 'Start climate', fr: 'Lancer la clim', de: 'Klima an', es: 'Iniciar clima' },
           icon: 'wind',
           action: { key: 'climate_on' },
         },
@@ -214,14 +245,24 @@ function vehicleContent(view, { timeZone } = {}) {
   if (electric && snapshot.charging === true) {
     components.push({
       type: 'button',
-      label: { en: 'Stop charging', fr: 'Arrêter la charge' },
+      label: {
+        en: 'Stop charging',
+        fr: 'Arrêter la charge',
+        de: 'Laden stoppen',
+        es: 'Parar carga',
+      },
       icon: 'zap-off',
       action: { key: 'charge_stop' },
     });
   } else if (electric && snapshot.plugged === true) {
     components.push({
       type: 'button',
-      label: { en: 'Start charging', fr: 'Lancer la charge' },
+      label: {
+        en: 'Start charging',
+        fr: 'Lancer la charge',
+        de: 'Laden starten',
+        es: 'Iniciar carga',
+      },
       icon: 'zap',
       action: { key: 'charge_start' },
     });
@@ -230,13 +271,13 @@ function vehicleContent(view, { timeZone } = {}) {
     snapshot.locked === false
       ? {
           type: 'button',
-          label: { en: 'Lock', fr: 'Verrouiller' },
+          label: { en: 'Lock', fr: 'Verrouiller', de: 'Verriegeln', es: 'Bloquear' },
           icon: 'lock',
           action: { key: 'lock' },
         }
       : {
           type: 'button',
-          label: { en: 'Unlock', fr: 'Déverrouiller' },
+          label: { en: 'Unlock', fr: 'Déverrouiller', de: 'Entriegeln', es: 'Desbloquear' },
           icon: 'unlock',
           style: 'danger',
           // A dashboard can hang on a wall: unlocking asks first.
@@ -244,7 +285,7 @@ function vehicleContent(view, { timeZone } = {}) {
         },
     {
       type: 'button',
-      label: { en: 'Refresh', fr: 'Actualiser' },
+      label: { en: 'Refresh', fr: 'Actualiser', de: 'Aktualisieren', es: 'Actualizar' },
       icon: 'refresh-cw',
       // Wakes the car: asks first.
       action: { key: 'refresh', confirm: true },
@@ -254,22 +295,62 @@ function vehicleContent(view, { timeZone } = {}) {
 }
 
 // Widget action key → [feature, value, toast].
-const VEHICLE_ACTIONS = {
-  climate_on: [VEHICLE_FEATURES.CLIMATE, 1, { en: 'Climate started', fr: 'Climatisation lancée' }],
+export const VEHICLE_ACTIONS = {
+  climate_on: [
+    VEHICLE_FEATURES.CLIMATE,
+    1,
+    {
+      en: 'Climate started',
+      fr: 'Climatisation lancée',
+      de: 'Klimatisierung gestartet',
+      es: 'Climatización iniciada',
+    },
+  ],
   climate_off: [
     VEHICLE_FEATURES.CLIMATE,
     0,
-    { en: 'Climate stopped', fr: 'Climatisation arrêtée' },
+    {
+      en: 'Climate stopped',
+      fr: 'Climatisation arrêtée',
+      de: 'Klimatisierung gestoppt',
+      es: 'Climatización detenida',
+    },
   ],
-  charge_start: [VEHICLE_FEATURES.CHARGING, 1, { en: 'Charging started', fr: 'Charge lancée' }],
-  charge_stop: [VEHICLE_FEATURES.CHARGING, 0, { en: 'Charging stopped', fr: 'Charge arrêtée' }],
-  lock: [VEHICLE_FEATURES.LOCKED, 1, { en: 'Vehicle locked', fr: 'Véhicule verrouillé' }],
-  unlock: [VEHICLE_FEATURES.LOCKED, 0, { en: 'Vehicle unlocked', fr: 'Véhicule déverrouillé' }],
+  charge_start: [
+    VEHICLE_FEATURES.CHARGING,
+    1,
+    { en: 'Charging started', fr: 'Charge lancée', de: 'Laden gestartet', es: 'Carga iniciada' },
+  ],
+  charge_stop: [
+    VEHICLE_FEATURES.CHARGING,
+    0,
+    { en: 'Charging stopped', fr: 'Charge arrêtée', de: 'Laden gestoppt', es: 'Carga detenida' },
+  ],
+  lock: [
+    VEHICLE_FEATURES.LOCKED,
+    1,
+    {
+      en: 'Vehicle locked',
+      fr: 'Véhicule verrouillé',
+      de: 'Fahrzeug verriegelt',
+      es: 'Vehículo bloqueado',
+    },
+  ],
+  unlock: [
+    VEHICLE_FEATURES.LOCKED,
+    0,
+    {
+      en: 'Vehicle unlocked',
+      fr: 'Véhicule déverrouillé',
+      de: 'Fahrzeug entriegelt',
+      es: 'Vehículo desbloqueado',
+    },
+  ],
 };
 
 /**
  * Widgets, keyed like the manifest. `runtime` is src/hyundaiKia.js.
- * A widget action resolves its success toast (bilingual), and throws on
+ * A widget action resolves its success toast (multi-language), and throws on
  * failure: the core (5.1.4) then shows "Action failed — <message>" in red,
  * the message being one plain string. A widget action does not carry the
  * viewer's language, a widget read does: the last one read is used.
@@ -288,6 +369,8 @@ export function createWidgets(runtime, { timeZone = process.env.TZ } = {}) {
               ? {
                   en: 'This device is not a Hyundai or Kia vehicle.',
                   fr: "Cet appareil n'est pas un véhicule Hyundai ou Kia.",
+                  de: 'Dieses Gerät ist kein Hyundai- oder Kia-Fahrzeug.',
+                  es: 'Este dispositivo no es un vehículo Hyundai o Kia.',
                 }
               : pickDevice,
           );
@@ -298,7 +381,12 @@ export function createWidgets(runtime, { timeZone = process.env.TZ } = {}) {
         try {
           if (actionKey === 'refresh') {
             await runtime.forceRefresh(settings?.device);
-            return { en: 'Vehicle state refreshed', fr: 'État du véhicule actualisé' };
+            return {
+              en: 'Vehicle state refreshed',
+              fr: 'État du véhicule actualisé',
+              de: 'Fahrzeugzustand aktualisiert',
+              es: 'Estado del vehículo actualizado',
+            };
           }
           const order = VEHICLE_ACTIONS[actionKey];
           if (!order) throw new Error(`Unknown action: ${actionKey}`);

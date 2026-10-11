@@ -280,13 +280,15 @@ test('the vehicle widget fits the core budget for every car, before and after cr
   await ctx.runtime.stop();
 });
 
-test('widget buttons: a bilingual toast on success, a thrown error when the car refuses', async () => {
+test('widget buttons: a multi-language toast on success, a thrown error when the car refuses', async () => {
   const ctx = await created({ client: createFakeClient({ result: ['success', 'failed'] }) });
   const widget = createWidgets(ctx.runtime).vehicle;
   const settings = { device: ctx.device('EV9').external_id };
   assert.deepEqual(await widget.action({ actionKey: 'lock', settings }), {
     en: 'Vehicle locked',
     fr: 'Véhicule verrouillé',
+    de: 'Fahrzeug verriegelt',
+    es: 'Vehículo bloqueado',
   });
   // The core shows a thrown error in red, a resolved one as a success.
   await assert.rejects(widget.action({ actionKey: 'unlock', settings }), {

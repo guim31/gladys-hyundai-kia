@@ -34,8 +34,9 @@ d'une Hyundai / Kia** (température et durée réglables dans la scène).
 3. Saisissez le **code PIN** (4 chiffres) du compte : il est nécessaire pour
    les commandes à distance (verrouillage, climatisation, charge). Sans lui, la
    voiture reste suivie.
-4. Choisissez la **langue du compte** (celle du compte de l'application) et
-   **enregistrez**.
+4. Choisissez la **langue du compte** (celle du compte de l'application) et la
+   **langue des noms d'appareils** (anglais, français, allemand ou espagnol :
+   Gladys garde les noms donnés à l'ajout de la voiture), puis **enregistrez**.
 5. Cliquez sur **Tester la connexion** : les voitures du compte s'affichent. Le
    test utilise la configuration enregistrée, pas le formulaire en cours de
    saisie : enregistrez d'abord. Un résultat reste affiché sous le bouton

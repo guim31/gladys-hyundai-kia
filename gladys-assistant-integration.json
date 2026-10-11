@@ -4,7 +4,9 @@
   "name": "Hyundai / Kia",
   "description": {
     "en": "Hyundai Bluelink and Kia Connect cars (Europe): battery, charging, climate, locks.",
-    "fr": "Voitures Hyundai Bluelink et Kia Connect (Europe) : batterie, charge, clim, verrouillage."
+    "fr": "Voitures Hyundai Bluelink et Kia Connect (Europe) : batterie, charge, clim, verrouillage.",
+    "de": "Hyundai-Bluelink- und Kia-Connect-Autos (Europa): Batterie, Laden, Klima, Verriegelung.",
+    "es": "Coches Hyundai Bluelink y Kia Connect (Europa): batería, carga, climatización, cierres."
   },
   "version": "1.0.2",
   "docker_image": "ghcr.io/guim31/gladys-hyundai-kia:1.0.2",
@@ -18,18 +20,24 @@
       "type": "section",
       "label": {
         "en": "Before you start",
-        "fr": "Avant de commencer"
+        "fr": "Avant de commencer",
+        "de": "Bevor du loslegst",
+        "es": "Antes de empezar"
       },
       "description": {
         "en": "This integration signs in to your Hyundai Bluelink or Kia Connect account (Europe), like the official app. Use the account of the app where your car appears. Reading the state the car last sent never wakes it; commands and forced refreshes do. Remote commands (locks, climate, charging) need the 4-digit PIN of the account.",
-        "fr": "Cette intégration se connecte à votre compte Hyundai Bluelink ou Kia Connect (Europe), comme l'application officielle. Utilisez le compte de l'application où apparaît votre voiture. Lire l'état que la voiture a envoyé en dernier ne la réveille jamais ; les commandes et les relevés forcés, si. Les commandes à distance (verrouillage, climatisation, charge) demandent le code PIN à 4 chiffres du compte."
+        "fr": "Cette intégration se connecte à votre compte Hyundai Bluelink ou Kia Connect (Europe), comme l'application officielle. Utilisez le compte de l'application où apparaît votre voiture. Lire l'état que la voiture a envoyé en dernier ne la réveille jamais ; les commandes et les relevés forcés, si. Les commandes à distance (verrouillage, climatisation, charge) demandent le code PIN à 4 chiffres du compte.",
+        "de": "Diese Integration meldet sich wie die offizielle App bei deinem Hyundai-Bluelink- oder Kia-Connect-Konto (Europa) an. Verwende das Konto der App, in der dein Auto erscheint. Das Lesen des zuletzt vom Auto gesendeten Zustands weckt es nie, Befehle und erzwungene Abfragen schon. Fernbefehle (Verriegelung, Klimatisierung, Laden) brauchen die 4-stellige PIN des Kontos.",
+        "es": "Esta integración inicia sesión en su cuenta Hyundai Bluelink o Kia Connect (Europa), como la aplicación oficial. Utilice la cuenta de la aplicación en la que aparece su coche. Leer el último estado enviado por el coche nunca lo despierta; los comandos y las actualizaciones forzadas, sí. Los comandos remotos (cierres, climatización, carga) requieren el PIN de 4 dígitos de la cuenta."
       },
       "links": [
         {
           "url": "https://github.com/guim31/gladys-hyundai-kia/blob/main/docs/en.md",
           "label": {
             "en": "Documentation",
-            "fr": "Documentation"
+            "fr": "Documentation",
+            "de": "Dokumentation",
+            "es": "Documentación"
           }
         }
       ]
@@ -39,11 +47,15 @@
       "type": "select",
       "label": {
         "en": "Brand",
-        "fr": "Marque"
+        "fr": "Marque",
+        "de": "Marke",
+        "es": "Marca"
       },
       "description": {
         "en": "Brand of the account (one integration per brand).",
-        "fr": "Marque du compte (une intégration par marque)."
+        "fr": "Marque du compte (une intégration par marque).",
+        "de": "Marke des Kontos (eine Integration pro Marke).",
+        "es": "Marca de la cuenta (una integración por marca)."
       },
       "required": false,
       "default": "hyundai",
@@ -52,14 +64,18 @@
           "value": "hyundai",
           "label": {
             "en": "Hyundai (Bluelink)",
-            "fr": "Hyundai (Bluelink)"
+            "fr": "Hyundai (Bluelink)",
+            "de": "Hyundai (Bluelink)",
+            "es": "Hyundai (Bluelink)"
           }
         },
         {
           "value": "kia",
           "label": {
             "en": "Kia (Kia Connect)",
-            "fr": "Kia (Kia Connect)"
+            "fr": "Kia (Kia Connect)",
+            "de": "Kia (Kia Connect)",
+            "es": "Kia (Kia Connect)"
           }
         }
       ]
@@ -69,15 +85,21 @@
       "type": "string",
       "label": {
         "en": "E-mail address",
-        "fr": "Adresse e-mail"
+        "fr": "Adresse e-mail",
+        "de": "E-Mail-Adresse",
+        "es": "Correo electrónico"
       },
       "description": {
         "en": "The e-mail address of your Bluelink or Kia Connect account.",
-        "fr": "L'adresse e-mail de votre compte Bluelink ou Kia Connect."
+        "fr": "L'adresse e-mail de votre compte Bluelink ou Kia Connect.",
+        "de": "Die E-Mail-Adresse deines Bluelink- oder Kia-Connect-Kontos.",
+        "es": "La dirección de correo electrónico de su cuenta Bluelink o Kia Connect."
       },
       "placeholder": {
         "en": "name@example.com",
-        "fr": "nom@exemple.fr"
+        "fr": "nom@exemple.fr",
+        "de": "name@beispiel.de",
+        "es": "nombre@ejemplo.es"
       },
       "required": true
     },
@@ -86,11 +108,15 @@
       "type": "secret",
       "label": {
         "en": "Password",
-        "fr": "Mot de passe"
+        "fr": "Mot de passe",
+        "de": "Passwort",
+        "es": "Contraseña"
       },
       "description": {
         "en": "The password of the account. If the sign-in is refused although the password is right, paste a refresh token here instead (see the documentation).",
-        "fr": "Le mot de passe du compte. Si la connexion est refusée alors que le mot de passe est juste, collez ici un jeton de rafraîchissement à la place (voir la documentation)."
+        "fr": "Le mot de passe du compte. Si la connexion est refusée alors que le mot de passe est juste, collez ici un jeton de rafraîchissement à la place (voir la documentation).",
+        "de": "Das Passwort des Kontos. Wird die Anmeldung trotz richtigem Passwort abgelehnt, füge hier stattdessen ein Refresh-Token ein (siehe Dokumentation).",
+        "es": "La contraseña de la cuenta. Si se rechaza el inicio de sesión aunque la contraseña sea correcta, pegue aquí un token de actualización (consulte la documentación)."
       },
       "required": true
     },
@@ -99,11 +125,15 @@
       "type": "secret",
       "label": {
         "en": "PIN (4 digits)",
-        "fr": "Code PIN (4 chiffres)"
+        "fr": "Code PIN (4 chiffres)",
+        "de": "PIN (4 Ziffern)",
+        "es": "PIN (4 dígitos)"
       },
       "description": {
         "en": "The 4-digit PIN of the account, the one the app asks for. Needed for remote commands (locks, climate, charging).",
-        "fr": "Le code PIN à 4 chiffres du compte, celui que demande l'application. Nécessaire pour les commandes à distance (verrouillage, climatisation, charge)."
+        "fr": "Le code PIN à 4 chiffres du compte, celui que demande l'application. Nécessaire pour les commandes à distance (verrouillage, climatisation, charge).",
+        "de": "Die 4-stellige PIN des Kontos, die auch die App abfragt. Nötig für Fernbefehle (Verriegelung, Klimatisierung, Laden).",
+        "es": "El PIN de 4 dígitos de la cuenta, el que pide la aplicación. Necesario para los comandos remotos (cierres, climatización, carga)."
       },
       "required": false
     },
@@ -112,11 +142,15 @@
       "type": "select",
       "label": {
         "en": "Account language",
-        "fr": "Langue du compte"
+        "fr": "Langue du compte",
+        "de": "Kontosprache",
+        "es": "Idioma de la cuenta"
       },
       "description": {
         "en": "Language of your account, kept as is by the sign-in (the official app follows it).",
-        "fr": "Langue de votre compte, conservée par la connexion (l'application officielle la suit)."
+        "fr": "Langue de votre compte, conservée par la connexion (l'application officielle la suit).",
+        "de": "Sprache deines Kontos, die bei der Anmeldung unverändert bleibt (die offizielle App richtet sich danach).",
+        "es": "Idioma de su cuenta, que el inicio de sesión conserva tal cual (la aplicación oficial lo sigue)."
       },
       "required": false,
       "default": "fr",
@@ -125,105 +159,135 @@
           "value": "en",
           "label": {
             "en": "English",
-            "fr": "Anglais"
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
           }
         },
         {
           "value": "fr",
           "label": {
             "en": "French",
-            "fr": "Français"
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
           }
         },
         {
           "value": "de",
           "label": {
             "en": "German",
-            "fr": "Allemand"
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
           }
         },
         {
           "value": "it",
           "label": {
             "en": "Italian",
-            "fr": "Italien"
+            "fr": "Italien",
+            "de": "Italienisch",
+            "es": "Italiano"
           }
         },
         {
           "value": "es",
           "label": {
             "en": "Spanish",
-            "fr": "Espagnol"
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
           }
         },
         {
           "value": "nl",
           "label": {
             "en": "Dutch",
-            "fr": "Néerlandais"
+            "fr": "Néerlandais",
+            "de": "Niederländisch",
+            "es": "Neerlandés"
           }
         },
         {
           "value": "pt",
           "label": {
             "en": "Portuguese",
-            "fr": "Portugais"
+            "fr": "Portugais",
+            "de": "Portugiesisch",
+            "es": "Portugués"
           }
         },
         {
           "value": "sv",
           "label": {
             "en": "Swedish",
-            "fr": "Suédois"
+            "fr": "Suédois",
+            "de": "Schwedisch",
+            "es": "Sueco"
           }
         },
         {
           "value": "no",
           "label": {
             "en": "Norwegian",
-            "fr": "Norvégien"
+            "fr": "Norvégien",
+            "de": "Norwegisch",
+            "es": "Noruego"
           }
         },
         {
           "value": "da",
           "label": {
             "en": "Danish",
-            "fr": "Danois"
+            "fr": "Danois",
+            "de": "Dänisch",
+            "es": "Danés"
           }
         },
         {
           "value": "fi",
           "label": {
             "en": "Finnish",
-            "fr": "Finnois"
+            "fr": "Finnois",
+            "de": "Finnisch",
+            "es": "Finés"
           }
         },
         {
           "value": "pl",
           "label": {
             "en": "Polish",
-            "fr": "Polonais"
+            "fr": "Polonais",
+            "de": "Polnisch",
+            "es": "Polaco"
           }
         },
         {
           "value": "cs",
           "label": {
             "en": "Czech",
-            "fr": "Tchèque"
+            "fr": "Tchèque",
+            "de": "Tschechisch",
+            "es": "Checo"
           }
         },
         {
           "value": "sk",
           "label": {
             "en": "Slovak",
-            "fr": "Slovaque"
+            "fr": "Slovaque",
+            "de": "Slowakisch",
+            "es": "Eslovaco"
           }
         },
         {
           "value": "hu",
           "label": {
             "en": "Hungarian",
-            "fr": "Hongrois"
+            "fr": "Hongrois",
+            "de": "Ungarisch",
+            "es": "Húngaro"
           }
         }
       ]
@@ -233,11 +297,15 @@
       "type": "select",
       "label": {
         "en": "Device names language",
-        "fr": "Langue des noms d'appareils"
+        "fr": "Langue des noms d'appareils",
+        "de": "Sprache der Gerätenamen",
+        "es": "Idioma de los nombres"
       },
       "description": {
         "en": "Language of the feature names given to new devices (Gladys keeps a name once the device is created).",
-        "fr": "Langue des noms de fonctionnalités des nouveaux appareils (Gladys garde un nom une fois l'appareil créé)."
+        "fr": "Langue des noms de fonctionnalités des nouveaux appareils (Gladys garde un nom une fois l'appareil créé).",
+        "de": "Sprache der Funktionsnamen neuer Geräte (Gladys behält einen Namen, sobald das Gerät erstellt ist).",
+        "es": "Idioma de los nombres de las funciones de los nuevos dispositivos (Gladys conserva un nombre una vez creado el dispositivo)."
       },
       "required": false,
       "default": "en",
@@ -246,14 +314,36 @@
           "value": "en",
           "label": {
             "en": "English",
-            "fr": "Anglais"
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
           }
         },
         {
           "value": "fr",
           "label": {
             "en": "French",
-            "fr": "Français"
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
           }
         }
       ]
@@ -263,11 +353,15 @@
       "type": "select",
       "label": {
         "en": "Refresh",
-        "fr": "Relevé"
+        "fr": "Relevé",
+        "de": "Abfrage",
+        "es": "Actualización"
       },
       "description": {
         "en": "How often the state the car last sent to the cloud is read. Never wakes the car.",
-        "fr": "Fréquence de lecture de l'état que la voiture a envoyé au cloud. Ne réveille jamais la voiture."
+        "fr": "Fréquence de lecture de l'état que la voiture a envoyé au cloud. Ne réveille jamais la voiture.",
+        "de": "Wie oft der Zustand gelesen wird, den das Auto zuletzt an die Cloud gesendet hat. Weckt das Auto nie.",
+        "es": "Frecuencia de lectura del último estado que el coche envió a la nube. Nunca despierta el coche."
       },
       "required": false,
       "default": "30",
@@ -276,21 +370,27 @@
           "value": "15",
           "label": {
             "en": "Every 15 minutes",
-            "fr": "Toutes les 15 minutes"
+            "fr": "Toutes les 15 minutes",
+            "de": "Alle 15 Minuten",
+            "es": "Cada 15 minutos"
           }
         },
         {
           "value": "30",
           "label": {
             "en": "Every 30 minutes",
-            "fr": "Toutes les 30 minutes"
+            "fr": "Toutes les 30 minutes",
+            "de": "Alle 30 Minuten",
+            "es": "Cada 30 minutos"
           }
         },
         {
           "value": "60",
           "label": {
             "en": "Every hour",
-            "fr": "Toutes les heures"
+            "fr": "Toutes les heures",
+            "de": "Stündlich",
+            "es": "Cada hora"
           }
         }
       ]
@@ -300,11 +400,15 @@
       "type": "select",
       "label": {
         "en": "Forced refresh",
-        "fr": "Relevé forcé"
+        "fr": "Relevé forcé",
+        "de": "Erzwungene Abfrage",
+        "es": "Actualización forzada"
       },
       "description": {
         "en": "Wakes the car to read its current state, never between 10 pm and 6 am. It drains the 12 V battery and counts in a daily quota: keep it off unless needed.",
-        "fr": "Réveille la voiture pour lire son état actuel, jamais entre 22 h et 6 h. Cela sollicite la batterie 12 V et compte dans un quota quotidien : laissez-le désactivé sauf besoin."
+        "fr": "Réveille la voiture pour lire son état actuel, jamais entre 22 h et 6 h. Cela sollicite la batterie 12 V et compte dans un quota quotidien : laissez-le désactivé sauf besoin.",
+        "de": "Weckt das Auto, um seinen aktuellen Zustand zu lesen, nie zwischen 22 und 6 Uhr. Das belastet die 12-V-Batterie und zählt zu einem Tageskontingent: Lass es aus, solange du es nicht brauchst.",
+        "es": "Despierta el coche para leer su estado actual, nunca entre las 22:00 y las 6:00. Consume la batería de 12 V y cuenta en una cuota diaria: déjelo desactivado salvo que lo necesite."
       },
       "required": false,
       "default": "0",
@@ -313,35 +417,45 @@
           "value": "0",
           "label": {
             "en": "Never (on request only)",
-            "fr": "Jamais (sur demande seulement)"
+            "fr": "Jamais (sur demande seulement)",
+            "de": "Nie (nur auf Anfrage)",
+            "es": "Nunca (solo bajo demanda)"
           }
         },
         {
           "value": "2",
           "label": {
             "en": "Every 2 hours",
-            "fr": "Toutes les 2 heures"
+            "fr": "Toutes les 2 heures",
+            "de": "Alle 2 Stunden",
+            "es": "Cada 2 horas"
           }
         },
         {
           "value": "4",
           "label": {
             "en": "Every 4 hours",
-            "fr": "Toutes les 4 heures"
+            "fr": "Toutes les 4 heures",
+            "de": "Alle 4 Stunden",
+            "es": "Cada 4 horas"
           }
         },
         {
           "value": "8",
           "label": {
             "en": "Every 8 hours",
-            "fr": "Toutes les 8 heures"
+            "fr": "Toutes les 8 heures",
+            "de": "Alle 8 Stunden",
+            "es": "Cada 8 horas"
           }
         },
         {
           "value": "12",
           "label": {
             "en": "Every 12 hours",
-            "fr": "Toutes les 12 heures"
+            "fr": "Toutes les 12 heures",
+            "de": "Alle 12 Stunden",
+            "es": "Cada 12 horas"
           }
         }
       ]
@@ -351,11 +465,15 @@
       "type": "select",
       "label": {
         "en": "Climate duration",
-        "fr": "Durée de la climatisation"
+        "fr": "Durée de la climatisation",
+        "de": "Dauer der Klimatisierung",
+        "es": "Duración de la climatización"
       },
       "description": {
         "en": "How long the climate runs when started from Gladys.",
-        "fr": "Durée de fonctionnement de la climatisation lancée depuis Gladys."
+        "fr": "Durée de fonctionnement de la climatisation lancée depuis Gladys.",
+        "de": "Wie lange die Klimatisierung läuft, wenn sie aus Gladys gestartet wird.",
+        "es": "Tiempo de funcionamiento de la climatización iniciada desde Gladys."
       },
       "required": false,
       "default": "10",
@@ -364,35 +482,45 @@
           "value": "5",
           "label": {
             "en": "5 minutes",
-            "fr": "5 minutes"
+            "fr": "5 minutes",
+            "de": "5 Minuten",
+            "es": "5 minutos"
           }
         },
         {
           "value": "10",
           "label": {
             "en": "10 minutes",
-            "fr": "10 minutes"
+            "fr": "10 minutes",
+            "de": "10 Minuten",
+            "es": "10 minutos"
           }
         },
         {
           "value": "15",
           "label": {
             "en": "15 minutes",
-            "fr": "15 minutes"
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
           }
         },
         {
           "value": "20",
           "label": {
             "en": "20 minutes",
-            "fr": "20 minutes"
+            "fr": "20 minutes",
+            "de": "20 Minuten",
+            "es": "20 minutos"
           }
         },
         {
           "value": "30",
           "label": {
             "en": "30 minutes",
-            "fr": "30 minutes"
+            "fr": "30 minutes",
+            "de": "30 Minuten",
+            "es": "30 minutos"
           }
         }
       ]
@@ -403,11 +531,15 @@
       "key": "test_connection",
       "label": {
         "en": "Test the connection",
-        "fr": "Tester la connexion"
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
       },
       "description": {
         "en": "Signs in and lists the vehicles of the account. No car is woken.",
-        "fr": "Se connecte et liste les véhicules du compte. Aucune voiture n'est réveillée."
+        "fr": "Se connecte et liste les véhicules du compte. Aucune voiture n'est réveillée.",
+        "de": "Meldet sich an und listet die Fahrzeuge des Kontos auf. Kein Auto wird geweckt.",
+        "es": "Inicia sesión y muestra los vehículos de la cuenta. No se despierta ningún coche."
       },
       "timeout_seconds": 60
     }
@@ -417,11 +549,15 @@
       "key": "refresh_vehicle",
       "label": {
         "en": "Refresh a Hyundai / Kia vehicle",
-        "fr": "Actualiser un véhicule Hyundai / Kia"
+        "fr": "Actualiser un véhicule Hyundai / Kia",
+        "de": "Hyundai-/Kia-Fahrzeug aktualisieren",
+        "es": "Actualizar un vehículo Hyundai / Kia"
       },
       "description": {
         "en": "Wakes the car and reads its current state, for the next actions of the scene.",
-        "fr": "Réveille la voiture et lit son état actuel, pour les actions suivantes de la scène."
+        "fr": "Réveille la voiture et lit son état actuel, pour les actions suivantes de la scène.",
+        "de": "Weckt das Auto und liest seinen aktuellen Zustand für die nächsten Aktionen der Szene.",
+        "es": "Despierta el coche y lee su estado actual, para las siguientes acciones de la escena."
       },
       "timeout_seconds": 90,
       "fields": [
@@ -431,7 +567,9 @@
           "source": "devices",
           "label": {
             "en": "Vehicle",
-            "fr": "Véhicule"
+            "fr": "Véhicule",
+            "de": "Fahrzeug",
+            "es": "Vehículo"
           },
           "required": true
         }
@@ -442,7 +580,9 @@
           "type": "number",
           "label": {
             "en": "Battery level (%)",
-            "fr": "Niveau de batterie (%)"
+            "fr": "Niveau de batterie (%)",
+            "de": "Batteriestand (%)",
+            "es": "Nivel de batería (%)"
           }
         },
         {
@@ -450,7 +590,9 @@
           "type": "number",
           "label": {
             "en": "Range (km)",
-            "fr": "Autonomie (km)"
+            "fr": "Autonomie (km)",
+            "de": "Reichweite (km)",
+            "es": "Autonomía (km)"
           }
         }
       ]
@@ -459,11 +601,15 @@
       "key": "start_climate",
       "label": {
         "en": "Start the climate of a Hyundai / Kia",
-        "fr": "Lancer la clim d'une Hyundai / Kia"
+        "fr": "Lancer la clim d'une Hyundai / Kia",
+        "de": "Klimatisierung eines Hyundai / Kia starten",
+        "es": "Iniciar la climatización de un Hyundai / Kia"
       },
       "description": {
         "en": "Heats or cools the cabin at the chosen temperature, for the chosen duration.",
-        "fr": "Chauffe ou rafraîchit l'habitacle à la température et pour la durée choisies."
+        "fr": "Chauffe ou rafraîchit l'habitacle à la température et pour la durée choisies.",
+        "de": "Heizt oder kühlt den Innenraum auf die gewählte Temperatur, für die gewählte Dauer.",
+        "es": "Calienta o enfría el habitáculo a la temperatura y durante el tiempo elegidos."
       },
       "timeout_seconds": 120,
       "fields": [
@@ -473,7 +619,9 @@
           "source": "devices",
           "label": {
             "en": "Vehicle",
-            "fr": "Véhicule"
+            "fr": "Véhicule",
+            "de": "Fahrzeug",
+            "es": "Vehículo"
           },
           "required": true
         },
@@ -482,15 +630,21 @@
           "type": "number",
           "label": {
             "en": "Temperature (°C)",
-            "fr": "Température (°C)"
+            "fr": "Température (°C)",
+            "de": "Temperatur (°C)",
+            "es": "Temperatura (°C)"
           },
           "description": {
             "en": "16 to 30 °C. Empty: the setpoint of the vehicle in Gladys.",
-            "fr": "16 à 30 °C. Vide : la consigne du véhicule dans Gladys."
+            "fr": "16 à 30 °C. Vide : la consigne du véhicule dans Gladys.",
+            "de": "16 bis 30 °C. Leer: der Sollwert des Fahrzeugs in Gladys.",
+            "es": "De 16 a 30 °C. Vacío: la consigna del vehículo en Gladys."
           },
           "placeholder": {
             "en": "e.g. 21",
-            "fr": "ex. 21"
+            "fr": "ex. 21",
+            "de": "z. B. 21",
+            "es": "p. ej. 21"
           },
           "required": false,
           "min": 16,
@@ -501,15 +655,21 @@
           "type": "number",
           "label": {
             "en": "Duration (minutes)",
-            "fr": "Durée (minutes)"
+            "fr": "Durée (minutes)",
+            "de": "Dauer (Minuten)",
+            "es": "Duración (minutos)"
           },
           "description": {
             "en": "1 to 30 minutes. Empty: the duration of the configuration.",
-            "fr": "1 à 30 minutes. Vide : la durée de la configuration."
+            "fr": "1 à 30 minutes. Vide : la durée de la configuration.",
+            "de": "1 bis 30 Minuten. Leer: die Dauer aus der Konfiguration.",
+            "es": "De 1 a 30 minutos. Vacío: la duración de la configuración."
           },
           "placeholder": {
             "en": "e.g. 10",
-            "fr": "ex. 10"
+            "fr": "ex. 10",
+            "de": "z. B. 10",
+            "es": "p. ej. 10"
           },
           "required": false,
           "min": 1,
@@ -522,7 +682,9 @@
           "type": "number",
           "label": {
             "en": "Temperature sent (°C)",
-            "fr": "Température envoyée (°C)"
+            "fr": "Température envoyée (°C)",
+            "de": "Gesendete Temperatur (°C)",
+            "es": "Temperatura enviada (°C)"
           }
         }
       ]
@@ -533,11 +695,15 @@
       "key": "vehicle",
       "label": {
         "en": "Hyundai / Kia vehicle",
-        "fr": "Véhicule Hyundai / Kia"
+        "fr": "Véhicule Hyundai / Kia",
+        "de": "Hyundai-/Kia-Fahrzeug",
+        "es": "Vehículo Hyundai / Kia"
       },
       "description": {
         "en": "Battery, range, charging, climate and locks, with buttons to act on the car.",
-        "fr": "Batterie, autonomie, charge, clim et verrous, avec des boutons pour agir sur la voiture."
+        "fr": "Batterie, autonomie, charge, clim et verrous, avec des boutons pour agir sur la voiture.",
+        "de": "Batterie, Reichweite, Laden, Klima und Verriegelung, mit Tasten, um das Auto zu steuern.",
+        "es": "Batería, autonomía, carga, climatización y cierres, con botones para actuar sobre el coche."
       },
       "icon": "battery-charging",
       "settings": [
@@ -547,7 +713,9 @@
           "source": "devices",
           "label": {
             "en": "Vehicle",
-            "fr": "Véhicule"
+            "fr": "Véhicule",
+            "de": "Fahrzeug",
+            "es": "Vehículo"
           },
           "required": true
         }
