@@ -66,74 +66,113 @@ export const STATUS_MESSAGES = {
   notConfigured: {
     en: 'Enter the e-mail address and password of your Bluelink or Kia Connect account.',
     fr: 'Saisissez l’adresse e-mail et le mot de passe de votre compte Bluelink ou Kia Connect.',
+    de: 'Gib die E-Mail-Adresse und das Passwort deines Bluelink- oder Kia-Connect-Kontos ein.',
+    es: 'Introduzca la dirección de correo electrónico y la contraseña de su cuenta Bluelink o Kia Connect.',
   },
   [ERROR_KINDS.AUTH]: {
     en: 'The account refused the sign-in: check the brand, e-mail address and password, then save.',
     fr: 'Le compte a refusé la connexion : vérifiez la marque, l’adresse e-mail et le mot de passe, puis enregistrez.',
+    de: 'Das Konto hat die Anmeldung abgelehnt: Prüfe Marke, E-Mail-Adresse und Passwort und speichere dann.',
+    es: 'La cuenta ha rechazado el inicio de sesión: compruebe la marca, el correo electrónico y la contraseña, y luego guarde.',
   },
   [ERROR_KINDS.CONSENT]: {
     en: 'Your account asks you to accept new terms: sign in once in the official app, then save the configuration again.',
     fr: 'Votre compte demande d’accepter de nouvelles conditions : connectez-vous une fois dans l’application officielle, puis enregistrez à nouveau la configuration.',
+    de: 'Dein Konto verlangt, neue Bedingungen zu akzeptieren: Melde dich einmal in der offiziellen App an und speichere dann die Konfiguration erneut.',
+    es: 'Su cuenta le pide aceptar nuevas condiciones: inicie sesión una vez en la aplicación oficial y vuelva a guardar la configuración.',
   },
   [ERROR_KINDS.BLOCKED]: {
     en: 'The sign-in pages refused the connection (protection against repeated sign-ins). Wait a few hours, then save the configuration again.',
     fr: 'Les pages de connexion ont refusé la connexion (protection contre les connexions répétées). Patientez quelques heures, puis enregistrez à nouveau la configuration.',
+    de: 'Die Anmeldeseiten haben die Verbindung abgelehnt (Schutz vor wiederholten Anmeldungen). Warte einige Stunden und speichere dann die Konfiguration erneut.',
+    es: 'Las páginas de inicio de sesión han rechazado la conexión (protección contra inicios de sesión repetidos). Espere unas horas y vuelva a guardar la configuración.',
   },
   // The PIN was refused (a PIN is saved).
   [ERROR_KINDS.PIN]: {
     en: 'The PIN of your account was refused: check it in the configuration of the integration.',
     fr: 'Le code PIN de votre compte a été refusé : vérifiez-le dans la configuration de l’intégration.',
+    de: 'Die PIN deines Kontos wurde abgelehnt: Prüfe sie in der Konfiguration der Integration.',
+    es: 'Se ha rechazado el PIN de su cuenta: compruébelo en la configuración de la integración.',
   },
   // The car asked for the PIN, none is saved.
   pinMissing: {
     en: 'Enter the PIN of your account in the configuration of the integration: the car asks for it for remote commands.',
     fr: 'Saisissez le code PIN de votre compte dans la configuration de l’intégration : la voiture le demande pour les commandes à distance.',
+    de: 'Gib die PIN deines Kontos in der Konfiguration der Integration ein: Das Auto verlangt sie für Fernbefehle.',
+    es: 'Introduzca el PIN de su cuenta en la configuración de la integración: el coche lo pide para los comandos remotos.',
   },
   [ERROR_KINDS.RATE_LIMIT]: {
     en: 'The daily request quota of the account is spent: try again tomorrow.',
     fr: 'Le quota quotidien de requêtes du compte est épuisé : réessayez demain.',
+    de: 'Das tägliche Anfragekontingent des Kontos ist aufgebraucht: Versuche es morgen erneut.',
+    es: 'Se ha agotado la cuota diaria de solicitudes de la cuenta: vuelva a intentarlo mañana.',
   },
   [ERROR_KINDS.CAR_UNAVAILABLE]: {
     en: 'The car did not answer (no network where it is parked?).',
     fr: 'La voiture n’a pas répondu (pas de réseau là où elle est garée ?).',
+    de: 'Das Auto hat nicht geantwortet (kein Netz dort, wo es parkt?).',
+    es: 'El coche no ha respondido (¿sin cobertura donde está aparcado?).',
   },
   [ERROR_KINDS.UNSUPPORTED]: {
     en: 'This car does not support this command.',
     fr: 'Cette voiture ne prend pas en charge cette commande.',
+    de: 'Dieses Auto unterstützt diesen Befehl nicht.',
+    es: 'Este coche no admite este comando.',
   },
   [ERROR_KINDS.DUPLICATE]: {
     en: 'Another command is already running on this car: try again in a minute.',
     fr: 'Une autre commande est déjà en cours sur cette voiture : réessayez dans une minute.',
+    de: 'Auf diesem Auto läuft bereits ein anderer Befehl: Versuche es in einer Minute erneut.',
+    es: 'Ya hay otro comando en curso en este coche: vuelva a intentarlo dentro de un minuto.',
   },
   // Connection test: what it checks is the saved configuration, never the
   // form being edited (the core sends no config with an action).
   notSaved: {
     en: 'No account is saved yet: enter the e-mail address and password, save, then test again.',
     fr: 'Aucun compte n’est encore enregistré : saisissez l’adresse e-mail et le mot de passe, enregistrez, puis testez à nouveau.',
+    de: 'Noch kein Konto gespeichert: Gib E-Mail-Adresse und Passwort ein, speichere und teste dann erneut.',
+    es: 'Todavía no hay ninguna cuenta guardada: introduzca el correo electrónico y la contraseña, guarde y vuelva a probar.',
   },
   starting: {
     en: 'The integration is starting: try again in a few seconds.',
     fr: 'L’intégration démarre : réessayez dans quelques secondes.',
+    de: 'Die Integration startet: Versuche es in ein paar Sekunden erneut.',
+    es: 'La integración se está iniciando: vuelva a intentarlo dentro de unos segundos.',
   },
   unreachable: {
     en: 'The Bluelink / Kia Connect cloud is unreachable for now, retrying.',
     fr: 'Le cloud Bluelink / Kia Connect est injoignable pour le moment, nouvel essai en cours.',
+    de: 'Die Bluelink-/Kia-Connect-Cloud ist gerade nicht erreichbar, neuer Versuch läuft.',
+    es: 'La nube de Bluelink / Kia Connect no está disponible por ahora, nuevo intento en curso.',
   },
   failed: {
     en: 'The car reported that the command failed.',
     fr: 'La voiture a indiqué que la commande a échoué.',
+    de: 'Das Auto hat gemeldet, dass der Befehl fehlgeschlagen ist.',
+    es: 'El coche ha indicado que el comando ha fallado.',
   },
   noAnswer: {
     en: 'The command was sent, but the car has not confirmed it yet.',
     fr: 'La commande est envoyée, mais la voiture ne l’a pas encore confirmée.',
+    de: 'Der Befehl wurde gesendet, aber das Auto hat ihn noch nicht bestätigt.',
+    es: 'El comando se ha enviado, pero el coche aún no lo ha confirmado.',
+  },
+  // Connection status when the start fails (index.js).
+  initFailed: {
+    en: 'Initialization failed, check the integration logs.',
+    fr: "L'initialisation a échoué, consultez les logs de l'intégration.",
+    de: 'Initialisierung fehlgeschlagen, sieh in den Logs der Integration nach.',
+    es: 'La inicialización ha fallado, consulte los registros de la integración.',
   },
   unknownVehicle: {
     en: 'Choose a Hyundai or Kia vehicle.',
     fr: 'Choisissez un véhicule Hyundai ou Kia.',
+    de: 'Wähle ein Hyundai- oder Kia-Fahrzeug.',
+    es: 'Elija un vehículo Hyundai o Kia.',
   },
 };
 
-/** An Error carrying a bilingual text, for action and widget toasts. */
+/** An Error carrying a multi-language text, for action and widget toasts. */
 export class UserError extends Error {
   constructor(text, kind) {
     super(text.en);
@@ -145,7 +184,7 @@ export class UserError extends Error {
 /**
  * A failed manifest action. Thrown, so Gladys shows it in red: the core
  * (5.1.4) relays the thrown `message` untouched to the browser, which picks
- * the user's language in a `{ en, fr }` object. A resolved action is always
+ * the user's language in a `{ en, fr, de, es }` object. A resolved action is always
  * shown as a success, there is no warning level. (SDK 0.14 has no such class.)
  */
 export class ActionFailure extends Error {
@@ -157,7 +196,7 @@ export class ActionFailure extends Error {
 }
 
 /**
- * The bilingual error of a cloud failure, `null` when none fits.
+ * The multi-language error of a cloud failure, `null` when none fits.
  * @param {Error} err
  * @param {boolean} pinSaved whether the configuration holds a PIN
  */
@@ -822,6 +861,8 @@ export function createHyundaiKia({
           userTextOf(err, pinSaved()) ?? {
             en: `The cloud refused the request: ${String(err.message).slice(0, 120)}`,
             fr: `Le cloud a refusé la requête : ${String(err.message).slice(0, 120)}`,
+            de: `Die Cloud hat die Anfrage abgelehnt: ${String(err.message).slice(0, 120)}`,
+            es: `La nube ha rechazado la solicitud: ${String(err.message).slice(0, 120)}`,
           },
         );
       }
@@ -836,8 +877,10 @@ export function createHyundaiKia({
           ? {
               en: ' Enter the PIN of your account to send remote commands (locks, climate, charging).',
               fr: ' Saisissez le code PIN de votre compte pour les commandes à distance (verrouillage, climatisation, charge).',
+              de: ' Gib die PIN deines Kontos ein, um Fernbefehle zu senden (Verriegelung, Klimatisierung, Laden).',
+              es: ' Introduzca el PIN de su cuenta para enviar comandos remotos (cierres, climatización, carga).',
             }
-          : { en: '', fr: '' };
+          : { en: '', fr: '', de: '', es: '' };
       if (blocked) {
         // The account works again: start over.
         await this.reconfigure(config);
@@ -845,6 +888,8 @@ export function createHyundaiKia({
       return {
         en: `Connected: ${list.length} vehicle(s)${names ? ` (${names})` : ''}.${pinNote.en}`,
         fr: `Connecté : ${list.length} véhicule(s)${names ? ` (${names})` : ''}.${pinNote.fr}`,
+        de: `Verbunden: ${list.length} Fahrzeug(e)${names ? ` (${names})` : ''}.${pinNote.de}`,
+        es: `Conectado: ${list.length} vehículo(s)${names ? ` (${names})` : ''}.${pinNote.es}`,
       };
     },
 

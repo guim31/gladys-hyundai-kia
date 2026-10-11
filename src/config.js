@@ -6,7 +6,7 @@
 
 import { ACCOUNT_LANGUAGES, BRANDS } from './bluelink/constants.js';
 
-export const LANGUAGES = ['en', 'fr'];
+export const LANGUAGES = ['en', 'fr', 'de', 'es'];
 // Minutes between two reads of the state the car last sent to the cloud.
 // Such a read never wakes the car, but counts in the account's daily quota.
 export const REFRESH_CHOICES = ['15', '30', '60'];

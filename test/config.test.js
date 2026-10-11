@@ -26,7 +26,7 @@ test('typed values are cleaned, unknown choices fall back', () => {
     password: ' pass word \n',
     pin: '12a4',
     account_language: 'xx',
-    language: 'de',
+    language: 'it',
     refresh_minutes: 7,
     force_refresh_hours: 4,
     climate_duration: '25',

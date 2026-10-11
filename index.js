@@ -10,7 +10,7 @@
 import { GladysIntegration, logger } from '@gladysassistant/integration-sdk';
 import { normalizeConfig } from './src/config.js';
 import { createStore } from './src/store.js';
-import { createHyundaiKia } from './src/hyundaiKia.js';
+import { createHyundaiKia, STATUS_MESSAGES } from './src/hyundaiKia.js';
 import { createWidgets } from './src/widgets.js';
 import { createSceneActions } from './src/scenes.js';
 
@@ -69,12 +69,7 @@ gladys.on('connected', async () => {
     }
   } catch (err) {
     logger.error('Initialization failed', err);
-    await gladys
-      .setConnectionStatus(false, {
-        en: 'Initialization failed, check the integration logs.',
-        fr: "L'initialisation a échoué, consultez les logs de l'intégration.",
-      })
-      .catch(() => {});
+    await gladys.setConnectionStatus(false, STATUS_MESSAGES.initFailed).catch(() => {});
   }
 });
 

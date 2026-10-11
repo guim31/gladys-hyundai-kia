@@ -10,6 +10,14 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Added
+
+- German and Spanish texts: configuration, connection test, scene actions,
+  widget and error messages follow the language of Gladys (German, Spanish,
+  French, English).
+- German and Spanish **device names language**, for the feature names of cars
+  added from now on.
+
 ## [1.0.2] - 2026-10-11
 
 ### Fixed

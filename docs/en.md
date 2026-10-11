@@ -32,8 +32,9 @@ climate of a Hyundai / Kia** (temperature and duration can be set in the scene).
 3. Enter the **PIN** (4 digits) of the account: it is needed for remote
    commands (locks, climate, charging). Without it, the car can still be
    followed.
-4. Choose the **account language** (the language of the app account) and
-   **save**.
+4. Choose the **account language** (the language of the app account), and the
+   **device names language** (English, French, German or Spanish: Gladys keeps
+   the names given when the car is added), then **save**.
 5. Click **Test the connection**: the cars of the account are listed. The test
    uses the saved configuration, not the form being edited: save first. A
    result stays under the button until the next test.
