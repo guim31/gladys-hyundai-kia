@@ -28,8 +28,9 @@ gladys.onSetValue((device, feature, value) =>
   runtime.setValue(device, feature, value, { deadlineMs: 4000 }),
 );
 
-// No device is published with `should_poll`: the runtime keeps its own pace.
-// Kept as a cheap republication of known values.
+// No device is published with `should_poll`: the runtime reads the cloud on its
+// own timer (Gladys 5.2.0 never polls these devices, GladysAssistant/Gladys#3198).
+// Kept as a fallback: publishes what changed, never calls the cloud.
 gladys.onPoll((device) => runtime.poll(device));
 
 // Gladys drops the states of a feature that does not exist yet: send them

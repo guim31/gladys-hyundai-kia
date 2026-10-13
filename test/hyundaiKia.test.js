@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { mock, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createLogger, validateWidgetContent } from '@gladysassistant/integration-sdk';
 import { ActionFailure, createHyundaiKia, STATUS_MESSAGES } from '../src/hyundaiKia.js';
@@ -8,6 +8,7 @@ import { createSceneActions } from '../src/scenes.js';
 import { VEHICLE_FEATURES as F } from '../src/devices/vehicle.js';
 import { createFakeGladys } from './helpers/fakeGladys.js';
 import { VEHICLES, createFakeClient, createMemoryStore } from './helpers/fakeBluelink.js';
+import { BluelinkError } from '../src/bluelink/errors.js';
 
 const silent = createLogger({ level: 'silent' });
 const MINUTE = 60 * 1000;
@@ -21,13 +22,14 @@ function setup({
   client = createFakeClient(),
   store = createMemoryStore(),
   at = NOON,
+  logger = silent,
 } = {}) {
   const gladys = createFakeGladys();
   let clock = at;
   const runtime = createHyundaiKia({
     gladys,
     store,
-    logger: silent,
+    logger,
     clientFactory: () => client,
     now: () => clock,
     // Waiting moves the clock: no real delay in the tests.
@@ -418,5 +420,110 @@ test('the real case: saved account, PIN added later with the password field left
   assert.doesNotMatch(message.en, /PIN/);
   // A result shown before the configuration was saved stays on screen in
   // Gladys 5.1.4 (the page keeps it): only "Save" then a new test updates it.
+  await ctx.runtime.stop();
+});
+
+// --- Polling and logs (SDK 0.15 review) -------------------------------------
+
+/** A logger that records its lines by level. */
+function recordingLogger() {
+  const lines = { debug: [], info: [], warn: [], error: [] };
+  const logger = Object.fromEntries(
+    Object.keys(lines).map((level) => [level, (...args) => lines[level].push(args.join(' '))]),
+  );
+  return { logger, lines };
+}
+
+/** Let the ticker's asynchronous work run to its end. */
+async function settled(rounds = 50) {
+  for (let i = 0; i < rounds; i += 1) await new Promise((resolve) => setImmediate(resolve));
+}
+
+test('the ticker reads the cloud by itself: states reach Gladys without any core poll', async (t) => {
+  // Gladys 5.2.0 never polls these devices (should_poll: false, and #3198):
+  // only the runtime's own timer may refresh them.
+  t.mock.timers.enable({ apis: ['setInterval'] });
+  const ctx = await created();
+  const poll = mock.method(ctx.runtime, 'poll');
+  const reads = ctx.client.count('cachedStatus');
+  ctx.client.states.get(VEHICLES[1].vehicleId).Green.BatteryManagement.BatteryRemain.Ratio = 64;
+  ctx.advance(31 * MINUTE);
+  t.mock.timers.tick(MINUTE);
+  await settled();
+  assert.equal(ctx.client.count('cachedStatus'), reads + 4);
+  assert.equal(ctx.client.count('forcedStatus'), 0, 'no car woken');
+  assert.equal(ctx.gladys.last(ctx.feature('EV9', F.BATTERY_LEVEL)), 64);
+  assert.equal(poll.mock.callCount(), 0);
+  await ctx.runtime.stop();
+});
+
+test("the core's poll is a fallback: no cloud call, only what changed", async () => {
+  const ctx = await created();
+  const calls = ctx.client.calls.length;
+  const count = ctx.gladys.published.length;
+  for (const device of ctx.gladys.devices) await ctx.runtime.poll(device);
+  assert.equal(ctx.client.calls.length, calls);
+  assert.equal(ctx.gladys.published.length, count);
+  await ctx.runtime.stop();
+});
+
+test('a normal cycle writes nothing at info level, nor above', async () => {
+  const { logger, lines } = recordingLogger();
+  const ctx = await created({ logger });
+  for (const level of Object.keys(lines)) lines[level].length = 0;
+  const statuses = ctx.gladys.connectionStatuses.length;
+  for (let cycle = 0; cycle < 4; cycle += 1) {
+    ctx.client.states.get(VEHICLES[1].vehicleId).Green.BatteryManagement.BatteryRemain.Ratio =
+      60 + cycle;
+    ctx.advance(31 * MINUTE);
+    await ctx.runtime.tick();
+  }
+  assert.equal(ctx.gladys.last(ctx.feature('EV9', F.BATTERY_LEVEL)), 63);
+  assert.deepEqual(lines.info, []);
+  assert.deepEqual(lines.warn, []);
+  assert.deepEqual(lines.error, []);
+  // The status is already "connected": not sent again on every read.
+  assert.equal(ctx.gladys.connectionStatuses.length, statuses);
+  await ctx.runtime.stop();
+});
+
+test('a cloud outage is logged once, its end once, and the status follows', async () => {
+  const { logger, lines } = recordingLogger();
+  const client = createFakeClient();
+  const ctx = await created({ client, logger });
+  for (const level of Object.keys(lines)) lines[level].length = 0;
+  const read = client.cachedStatus;
+  client.cachedStatus = async () => {
+    throw new BluelinkError('network', 'prd.eu-ccapi.hyundai.com unreachable (ECONNRESET)');
+  };
+  for (let cycle = 0; cycle < 3; cycle += 1) {
+    ctx.advance(31 * MINUTE);
+    await ctx.runtime.tick();
+  }
+  assert.equal(lines.warn.length, 1);
+  assert.match(lines.warn[0], /unreachable/);
+  assert.ok(lines.debug.length >= 11, 'the repeats stay at debug level');
+  assert.deepEqual(ctx.gladys.connectionStatuses.at(-1), {
+    connected: false,
+    message: STATUS_MESSAGES.unreachable,
+  });
+  const statuses = ctx.gladys.connectionStatuses.length;
+  client.cachedStatus = read;
+  ctx.advance(31 * MINUTE);
+  await ctx.runtime.tick();
+  assert.equal(lines.info.length, 1);
+  assert.match(lines.info[0], /answers again/);
+  assert.equal(lines.warn.length, 1);
+  assert.equal(ctx.gladys.connectionStatuses.length, statuses + 1);
+  assert.equal(ctx.gladys.connectionStatuses.at(-1).connected, true);
+  await ctx.runtime.stop();
+});
+
+test('reconnected to Gladys: the connection status is sent again', async () => {
+  const ctx = await created();
+  const statuses = ctx.gladys.connectionStatuses.length;
+  await ctx.runtime.resync();
+  assert.equal(ctx.gladys.connectionStatuses.length, statuses + 1);
+  assert.equal(ctx.gladys.connectionStatuses.at(-1).connected, true);
   await ctx.runtime.stop();
 });

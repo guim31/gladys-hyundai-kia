@@ -4,11 +4,21 @@ All notable changes to this integration are documented in this file. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 uses [semantic versioning](https://semver.org/).
 
-Describe each change under `## [Unreleased]` as you make it. The Release
-workflow moves that section under the version it ships, and the section becomes
-the notes of the version's GitHub Release.
+Describe each change under `## [Unreleased]
 
-## [Unreleased]
+### Changed
+
+- Quieter logs: a cloud outage or a failing read is logged once, then once
+  more when it recovers, instead of at every read. The connection status is
+  sent to Gladys only when it changes, and again after Gladys restarts.
+- The cars keep refreshing on the integration's own timer whether or not
+  Gladys polls them (Gladys 5.2.0 does not): now covered by a test.
+- Integration SDK 0.15.
+
+### Fixed
+
+- A poll from Gladys, if one ever comes, no longer resends every value of the
+  car: only what changed.
 
 ## [1.1.0] - 2026-10-11
 

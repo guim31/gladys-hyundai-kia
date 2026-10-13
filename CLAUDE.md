@@ -75,8 +75,17 @@ test/fixtures/bluelink/           cloud answers (adapted from hyundai_kia_connec
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** comes in four languages (`en`, `fr`, `de`, `es`):
+  action messages, widget and error texts, manifest texts
+  (`test/i18n.test.js`). The documentation is `docs/en.md` / `docs/fr.md`,
+  kept in sync.
+- **Logs.** Info level is for the lifecycle only (start, sign-in, cars found,
+  one line per user command, a failure and its recovery). A failure that
+  repeats on every read is logged once (warn), then at debug level until it
+  recovers (`logFailure` / `logRecovery`); the connection status is sent only
+  when it changes. `LOG_LEVEL=debug` shows the rest. Never a token, password,
+  PIN or full VIN. `test/hyundaiKia.test.js` checks a normal cycle writes
+  nothing at info level.
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -114,6 +123,10 @@ code de ce dépôt. Compléter ce fichier quand un nouveau piège est découvert
   15000, 30000, 60000). Le template publie `poll_frequency: 300` sans `should_poll` : c'est faux,
   le cœur répond 400 à la découverte. Pour une cadence hors liste, publier `should_poll: false` et
   pousser les états depuis le conteneur, en gardant un `onPoll` de repli.
+  Gladys 5.2.0 (issue GladysAssistant/Gladys#3198) ne sonde pas non plus les appareils **déjà
+  créés** sans `should_poll` : ne jamais compter sur `onPoll`. Ici, le minuteur de
+  `src/hyundaiKia.js` (une minute, lectures selon `refresh_minutes`) fait tout ; `onPoll` ne
+  republie que ce qui a changé, sans appel au cloud. Un test le prouve sans aucun `onPoll`.
 - **`min` et `max` sont NOT NULL** dans `t_device_feature`, y compris pour `text/text` : sans eux,
   « Ajouter à Gladys » échoue en HTTP 422. Mettre 0/0, comme Zigbee2MQTT.
 - Un état publié sur une fonctionnalité **pas encore ajoutée** dans Gladys reçoit un 200 puis est
