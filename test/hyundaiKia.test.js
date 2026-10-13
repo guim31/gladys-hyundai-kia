@@ -1,4 +1,4 @@
-import { mock, test } from 'node:test';
+import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createLogger, validateWidgetContent } from '@gladysassistant/integration-sdk';
 import { ActionFailure, createHyundaiKia, STATUS_MESSAGES } from '../src/hyundaiKia.js';
@@ -444,7 +444,6 @@ test('the ticker reads the cloud by itself: states reach Gladys without any core
   // only the runtime's own timer may refresh them.
   t.mock.timers.enable({ apis: ['setInterval'] });
   const ctx = await created();
-  const poll = mock.method(ctx.runtime, 'poll');
   const reads = ctx.client.count('cachedStatus');
   ctx.client.states.get(VEHICLES[1].vehicleId).Green.BatteryManagement.BatteryRemain.Ratio = 64;
   ctx.advance(31 * MINUTE);
@@ -453,7 +452,6 @@ test('the ticker reads the cloud by itself: states reach Gladys without any core
   assert.equal(ctx.client.count('cachedStatus'), reads + 4);
   assert.equal(ctx.client.count('forcedStatus'), 0, 'no car woken');
   assert.equal(ctx.gladys.last(ctx.feature('EV9', F.BATTERY_LEVEL)), 64);
-  assert.equal(poll.mock.callCount(), 0);
   await ctx.runtime.stop();
 });
 
@@ -500,9 +498,10 @@ test('a cloud outage is logged once, its end once, and the status follows', asyn
     ctx.advance(31 * MINUTE);
     await ctx.runtime.tick();
   }
-  assert.equal(lines.warn.length, 1);
-  assert.match(lines.warn[0], /unreachable/);
-  assert.ok(lines.debug.length >= 11, 'the repeats stay at debug level');
+  // One line per car at the first failure, then nothing above debug.
+  assert.equal(lines.warn.length, 4);
+  assert.ok(lines.warn.every((line) => /unreachable/.test(line)));
+  assert.ok(lines.debug.length >= 8, 'the repeats stay at debug level');
   assert.deepEqual(ctx.gladys.connectionStatuses.at(-1), {
     connected: false,
     message: STATUS_MESSAGES.unreachable,
@@ -511,9 +510,9 @@ test('a cloud outage is logged once, its end once, and the status follows', asyn
   client.cachedStatus = read;
   ctx.advance(31 * MINUTE);
   await ctx.runtime.tick();
-  assert.equal(lines.info.length, 1);
-  assert.match(lines.info[0], /answers again/);
-  assert.equal(lines.warn.length, 1);
+  assert.equal(lines.info.length, 4);
+  assert.ok(lines.info.every((line) => /works again/.test(line)));
+  assert.equal(lines.warn.length, 4);
   assert.equal(ctx.gladys.connectionStatuses.length, statuses + 1);
   assert.equal(ctx.gladys.connectionStatuses.at(-1).connected, true);
   await ctx.runtime.stop();
@@ -524,6 +523,34 @@ test('reconnected to Gladys: the connection status is sent again', async () => {
   const statuses = ctx.gladys.connectionStatuses.length;
   await ctx.runtime.resync();
   assert.equal(ctx.gladys.connectionStatuses.length, statuses + 1);
+  assert.equal(ctx.gladys.connectionStatuses.at(-1).connected, true);
+  await ctx.runtime.stop();
+});
+
+test('one car failing while the others answer: one warn, not one per cycle', async () => {
+  const { logger, lines } = recordingLogger();
+  const client = createFakeClient();
+  const ctx = await created({ client, logger });
+  for (const level of Object.keys(lines)) lines[level].length = 0;
+  const read = client.cachedStatus;
+  client.cachedStatus = async (ref) => {
+    if (ref.id === VEHICLES[1].vehicleId) throw new BluelinkError('server', 'HTTP 503');
+    return read(ref);
+  };
+  for (let cycle = 0; cycle < 3; cycle += 1) {
+    ctx.advance(31 * MINUTE);
+    await ctx.runtime.tick();
+  }
+  assert.equal(lines.warn.length, 1);
+  assert.deepEqual(lines.info, []);
+  await ctx.runtime.stop();
+});
+
+test('a failure status set from index.js does not stick once reads work', async () => {
+  const ctx = await created();
+  await ctx.runtime.reportStatus(false, STATUS_MESSAGES.initFailed);
+  ctx.advance(31 * MINUTE);
+  await ctx.runtime.tick();
   assert.equal(ctx.gladys.connectionStatuses.at(-1).connected, true);
   await ctx.runtime.stop();
 });

@@ -474,7 +474,8 @@ export function createHyundaiKia({
     }
     if (err.kind === ERROR_KINDS.NETWORK || err.kind === ERROR_KINDS.SERVER) {
       lastFailureAt = now();
-      if (failureKey) logFailure('cloud', `${context}: ${err.message}`);
+      // Per read: one car failing must not hide behind another that answers.
+      if (failureKey) logFailure(failureKey, `${context}: ${err.message}`);
       else logger.warn(`${context}: ${err.message}`);
       await setStatus(false, STATUS_MESSAGES.unreachable);
       return false;
@@ -484,10 +485,9 @@ export function createHyundaiKia({
     return false;
   }
 
-  /** The cloud answered a periodic call: end of the logged outages. */
+  /** A periodic call worked: end of its logged failure, if any. */
   function cloudAnswered(failureKey, label) {
-    logRecovery('cloud', 'The Bluelink / Kia Connect cloud answers again');
-    if (failureKey) logRecovery(failureKey, `${label}: works again`);
+    logRecovery(failureKey, `${label}: works again`);
   }
 
   async function readVehicle(vehicle, { forced = false } = {}) {
@@ -768,6 +768,14 @@ export function createHyundaiKia({
     },
 
     /** (Re)connected to Gladys: devices and every state again. */
+    /**
+     * A status set from outside the runtime (index.js, failed start): sent
+     * through the same memory, so the next read can put "connected" back.
+     */
+    reportStatus(connected, message) {
+      return setStatus(connected, message);
+    },
+
     async resync() {
       published.clear();
       statusSent = null;

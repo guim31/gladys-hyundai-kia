@@ -70,7 +70,7 @@ gladys.on('connected', async () => {
     }
   } catch (err) {
     logger.error('Initialization failed', err);
-    await gladys.setConnectionStatus(false, STATUS_MESSAGES.initFailed).catch(() => {});
+    await runtime.reportStatus(false, STATUS_MESSAGES.initFailed);
   }
 });
 
