@@ -554,3 +554,34 @@ test('a failure status set from index.js does not stick once reads work', async 
   assert.equal(ctx.gladys.connectionStatuses.at(-1).connected, true);
   await ctx.runtime.stop();
 });
+
+test('an account without a car is listed again every 15 minutes, not every minute', async () => {
+  const client = createFakeClient({ vehicles: [] });
+  const ctx = await started({ client });
+  assert.equal(client.count('vehicles'), 1);
+  for (let minute = 0; minute < 14; minute += 1) {
+    ctx.advance(MINUTE);
+    await ctx.runtime.tick();
+  }
+  assert.equal(client.count('vehicles'), 1);
+  ctx.advance(2 * MINUTE);
+  await ctx.runtime.tick();
+  assert.equal(client.count('vehicles'), 2);
+  await ctx.runtime.stop();
+});
+
+test('a spent quota is logged once while it lasts', async () => {
+  const { logger, lines } = recordingLogger();
+  const client = createFakeClient();
+  const ctx = await created({ client, logger });
+  for (const level of Object.keys(lines)) lines[level].length = 0;
+  client.cachedStatus = async () => {
+    throw new BluelinkError('rate-limit', 'quota');
+  };
+  for (let hour = 0; hour < 3; hour += 1) {
+    ctx.advance(61 * MINUTE);
+    await ctx.runtime.tick();
+  }
+  assert.equal(lines.warn.length, 1);
+  await ctx.runtime.stop();
+});

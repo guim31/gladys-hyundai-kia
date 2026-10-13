@@ -23,6 +23,8 @@ the notes of the version's GitHub Release.
 
 - A poll from Gladys, if one ever comes, no longer resends every value of the
   car: only what changed.
+- An account without any car is no longer listed again every minute: every
+  15 minutes.
 
 ## [1.1.0] - 2026-10-11
 

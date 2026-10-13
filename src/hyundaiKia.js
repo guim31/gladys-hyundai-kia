@@ -321,9 +321,11 @@ export function createHyundaiKia({
     try {
       await gladys.setConnectionStatus(connected, message);
       statusSent = key;
+      logRecovery('status', 'Connection status reported again');
     } catch (err) {
-      // Gladys unreachable: the SDK already logs its connection lifecycle.
-      logger.debug(`Could not report the connection status: ${err.message}`);
+      // Logged once: Gladys unreachable is already in the SDK's lifecycle logs,
+      // but a refusal of the core must stay visible.
+      logFailure('status', `Could not report the connection status: ${err.message}`);
     }
   }
 
@@ -469,7 +471,8 @@ export function createHyundaiKia({
     }
     if (err.kind === ERROR_KINDS.RATE_LIMIT) {
       backoffUntil = now() + RATE_LIMIT_BACKOFF_MS;
-      logger.warn(`${context}: daily request quota spent, reads pause for an hour`);
+      // Retried every hour while the quota stays spent: logged once.
+      logFailure('rate-limit', `${context}: daily request quota spent, reads pause for an hour`);
       return false;
     }
     if (err.kind === ERROR_KINDS.NETWORK || err.kind === ERROR_KINDS.SERVER) {
@@ -487,6 +490,7 @@ export function createHyundaiKia({
 
   /** A periodic call worked: end of its logged failure, if any. */
   function cloudAnswered(failureKey, label) {
+    logRecovery('rate-limit', 'The daily request quota is available again');
     logRecovery(failureKey, `${label}: works again`);
   }
 
@@ -577,6 +581,8 @@ export function createHyundaiKia({
     if (t < backoffUntil) return;
     if (vehicles.size === 0 || t - lastListAt >= VEHICLE_LIST_REFRESH_MS) {
       if (lastFailureAt && t - lastFailureAt < RETRY_MS && vehicles.size === 0) return;
+      // An account without a car: list it again every RETRY_MS, not every minute.
+      if (vehicles.size === 0 && lastListAt && t - lastListAt < RETRY_MS) return;
       await connect();
       if (blocked) return;
     }
@@ -767,7 +773,6 @@ export function createHyundaiKia({
       nudgeWidget(WIDGET_KEYS.VEHICLE);
     },
 
-    /** (Re)connected to Gladys: devices and every state again. */
     /**
      * A status set from outside the runtime (index.js, failed start): sent
      * through the same memory, so the next read can put "connected" back.
@@ -776,6 +781,7 @@ export function createHyundaiKia({
       return setStatus(connected, message);
     },
 
+    /** (Re)connected to Gladys: devices and every state again. */
     async resync() {
       published.clear();
       statusSent = null;
