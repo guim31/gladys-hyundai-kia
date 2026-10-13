@@ -10,6 +10,22 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Changed
+
+- Quieter logs: a cloud outage or a failing read is logged once per car, then once
+  more when it recovers, instead of at every read. The connection status is
+  sent to Gladys only when it changes, and again after Gladys restarts.
+- The cars keep refreshing on the integration's own timer whether or not
+  Gladys polls them (Gladys 5.2.0 does not): now covered by a test.
+- Integration SDK 0.15.
+
+### Fixed
+
+- A poll from Gladys, if one ever comes, no longer resends every value of the
+  car: only what changed.
+- An account without any car is no longer listed again every minute: every
+  15 minutes.
+
 ## [1.1.0] - 2026-10-11
 
 ### Added

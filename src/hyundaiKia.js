@@ -257,6 +257,11 @@ export function createHyundaiKia({
   const published = new Map(); // feature external_id → serialized value
   const nudges = new Map(); // widget key → { at, timer }
   const background = new Set(); // command follow-ups in flight
+  // Failures already logged (key → true): a failure that repeats every read
+  // is logged once at warn level, then at debug level until it recovers.
+  const failing = new Set();
+  let statusSent = null; // last connection status Gladys accepted (serialized)
+  let statusWanted = null; // last connection status asked for: [connected, message]
 
   // --- Helpers ---------------------------------------------------------------
 
@@ -307,12 +312,36 @@ export function createHyundaiKia({
     nudgeWidget(WIDGET_KEYS.VEHICLE);
   }
 
+  // Every read reports the status: send it only when it changes. Reset when
+  // Gladys reconnects (resync) or the runtime starts again.
   async function setStatus(connected, message) {
+    statusWanted = [connected, message];
+    const key = JSON.stringify([connected, message ?? null]);
+    if (key === statusSent) return;
     try {
       await gladys.setConnectionStatus(connected, message);
+      statusSent = key;
+      logRecovery('status', 'Connection status reported again');
     } catch (err) {
-      logger.warn(`Could not report the connection status: ${err.message}`);
+      // Logged once: Gladys unreachable is already in the SDK's lifecycle logs,
+      // but a refusal of the core must stay visible.
+      logFailure('status', `Could not report the connection status: ${err.message}`);
     }
+  }
+
+  /** Log a failure once (warn), then at debug level while it repeats. */
+  function logFailure(key, line) {
+    if (failing.has(key)) {
+      logger.debug(line);
+      return;
+    }
+    failing.add(key);
+    logger.warn(`${line} (logged once until it recovers)`);
+  }
+
+  /** One info line when a logged failure is over. */
+  function logRecovery(key, line) {
+    if (failing.delete(key)) logger.info(line);
   }
 
   // --- Publishing ------------------------------------------------------------
@@ -343,8 +372,10 @@ export function createHyundaiKia({
         for (const { externalId, serialized } of batch) published.set(externalId, serialized);
       } catch (err) {
         // Not remembered: the next change (or reconnection) sends it again.
-        logger.warn(`Publishing ${batch.length} state(s) failed: ${err.message}`);
+        logFailure('publish', `Publishing ${batch.length} state(s) failed: ${err.message}`);
+        continue;
       }
+      logRecovery('publish', 'Publishing states to Gladys works again');
     }
     return changed.length;
   }
@@ -426,8 +457,11 @@ export function createHyundaiKia({
 
   // --- Reads -----------------------------------------------------------------
 
-  /** Handle a read or command error; true when the runtime must stop. */
-  async function handleError(err, context) {
+  /**
+   * Handle a read or command error; true when the runtime must stop.
+   * `failureKey` marks a periodic read: its repeated failures are logged once.
+   */
+  async function handleError(err, context, failureKey = null) {
     if (BLOCKING_KINDS.has(err.kind)) {
       blocked = err.kind;
       logger.error(`${context}: ${err.message}`);
@@ -437,17 +471,27 @@ export function createHyundaiKia({
     }
     if (err.kind === ERROR_KINDS.RATE_LIMIT) {
       backoffUntil = now() + RATE_LIMIT_BACKOFF_MS;
-      logger.warn(`${context}: daily request quota spent, reads pause for an hour`);
+      // Retried every hour while the quota stays spent: logged once.
+      logFailure('rate-limit', `${context}: daily request quota spent, reads pause for an hour`);
       return false;
     }
     if (err.kind === ERROR_KINDS.NETWORK || err.kind === ERROR_KINDS.SERVER) {
       lastFailureAt = now();
-      logger.warn(`${context}: ${err.message}`);
+      // Per read: one car failing must not hide behind another that answers.
+      if (failureKey) logFailure(failureKey, `${context}: ${err.message}`);
+      else logger.warn(`${context}: ${err.message}`);
       await setStatus(false, STATUS_MESSAGES.unreachable);
       return false;
     }
-    logger.warn(`${context}: ${err.message}`);
+    if (failureKey) logFailure(failureKey, `${context}: ${err.message}`);
+    else logger.warn(`${context}: ${err.message}`);
     return false;
+  }
+
+  /** A periodic call worked: end of its logged failure, if any. */
+  function cloudAnswered(failureKey, label) {
+    logRecovery('rate-limit', 'The daily request quota is available again');
+    logRecovery(failureKey, `${label}: works again`);
   }
 
   async function readVehicle(vehicle, { forced = false } = {}) {
@@ -461,14 +505,15 @@ export function createHyundaiKia({
   }
 
   async function safeRead(vehicle, options) {
+    const label = `Reading ${vehicle.info.nickname || vehicle.info.vehicleName || 'a vehicle'}`;
+    const failureKey = `read:${vehicle.info.vin}`;
     try {
       await readVehicle(vehicle, options);
     } catch (err) {
-      await handleError(
-        err,
-        `Reading ${vehicle.info.nickname || vehicle.info.vehicleName || 'a vehicle'}`,
-      );
+      await handleError(err, label, failureKey);
+      return;
     }
+    cloudAnswered(failureKey, label);
   }
 
   /** The account's cars; new ones appear in the Discovery screen. */
@@ -478,9 +523,10 @@ export function createHyundaiKia({
       list = await client.vehicles();
       lastListAt = now();
     } catch (err) {
-      await handleError(err, 'Listing the vehicles');
+      await handleError(err, 'Listing the vehicles', 'list');
       return false;
     }
+    cloudAnswered('list', 'Listing the vehicles');
     const seen = new Set();
     for (const info of list) {
       if (!info?.vin || !info?.vehicleId) continue;
@@ -522,9 +568,10 @@ export function createHyundaiKia({
     try {
       await client.connect();
     } catch (err) {
-      await handleError(err, 'Signing in');
+      await handleError(err, 'Signing in', 'sign-in');
       return false;
     }
+    cloudAnswered('sign-in', 'Signing in');
     return discover();
   }
 
@@ -534,6 +581,8 @@ export function createHyundaiKia({
     if (t < backoffUntil) return;
     if (vehicles.size === 0 || t - lastListAt >= VEHICLE_LIST_REFRESH_MS) {
       if (lastFailureAt && t - lastFailureAt < RETRY_MS && vehicles.size === 0) return;
+      // An account without a car: list it again every RETRY_MS, not every minute.
+      if (vehicles.size === 0 && lastListAt && t - lastListAt < RETRY_MS) return;
       await connect();
       if (blocked) return;
     }
@@ -681,6 +730,8 @@ export function createHyundaiKia({
     stopped = false;
     blocked = null;
     commandIssue = null;
+    failing.clear();
+    statusSent = null;
     backoffUntil = 0;
     lastFailureAt = 0;
     if (!isConfigured(config)) {
@@ -722,9 +773,19 @@ export function createHyundaiKia({
       nudgeWidget(WIDGET_KEYS.VEHICLE);
     },
 
+    /**
+     * A status set from outside the runtime (index.js, failed start): sent
+     * through the same memory, so the next read can put "connected" back.
+     */
+    reportStatus(connected, message) {
+      return setStatus(connected, message);
+    },
+
     /** (Re)connected to Gladys: devices and every state again. */
     async resync() {
       published.clear();
+      statusSent = null;
+      if (statusWanted) await setStatus(...statusWanted);
       await publishDevices({ force: true });
       await publishAll({ force: true });
       nudgeWidget(WIDGET_KEYS.VEHICLE);
@@ -745,10 +806,13 @@ export function createHyundaiKia({
       nudgeWidget(WIDGET_KEYS.VEHICLE);
     },
 
-    /** The core's scheduled poll (not used: no device asks for it). */
+    /**
+     * The core's scheduled poll: a fallback only, no device asks for it (the
+     * ticker reads the cloud). Never calls the cloud; publishes what changed.
+     */
     async poll(device) {
       const vehicle = findVehicle(device.external_id);
-      if (vehicle) await publishVehicle(vehicle, { force: true });
+      if (vehicle) await publishVehicle(vehicle);
     },
 
     /**
