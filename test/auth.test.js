@@ -3,7 +3,12 @@ import assert from 'node:assert/strict';
 import { constants as cryptoConstants, generateKeyPairSync, privateDecrypt } from 'node:crypto';
 import { brandConstants } from '../src/bluelink/constants.js';
 import { createHttp } from '../src/bluelink/http.js';
-import { computeStamp, createAuth } from '../src/bluelink/auth.js';
+import {
+  computeFingerprint,
+  computeStamp,
+  createAuth,
+  isGateRejection,
+} from '../src/bluelink/auth.js';
 import { ERROR_KINDS } from '../src/bluelink/errors.js';
 import { createFakeFetch, ok } from './helpers/fakeFetch.js';
 
@@ -49,7 +54,7 @@ function cciRoutes({ signin } = {}) {
     },
     {
       method: 'POST',
-      url: /cci-api-eu\.hyundai\.com\/domain\/api\/v1\/auth\/token\?code=CODE123$/,
+      url: /cci-api-eu\.hyundai\.com\/auth\/v1\/token\?code=CODE123$/,
       reply: () => ({
         json: {
           accessToken: 'cci-access',
@@ -64,7 +69,7 @@ function cciRoutes({ signin } = {}) {
     },
     {
       method: 'POST',
-      url: /\/domain\/api\/v1\/auth\/token-exchange\?serviceType=CCS$/,
+      url: /cci-api-eu\.hyundai\.com\/auth\/v1\/token-exchange\?serviceType=CCS$/,
       reply: () => ({ json: { accessToken: 'ccs-token', expiresTime: 86400 } }),
     },
   ];
@@ -203,7 +208,7 @@ test('a CCI token set is refreshed without the password, then exchanged again', 
   const { auth, requests } = setup([
     {
       method: 'POST',
-      url: /\/domain\/api\/v2\/auth\/token-refresh$/,
+      url: /cci-api-eu\.hyundai\.com\/auth\/v2\/token-refresh$/,
       reply: () => ({ json: { accessToken: 'cci-access-2', refreshToken: 'cci-refresh-2' } }),
     },
     {
@@ -230,4 +235,100 @@ test('an unreachable cloud is a network error, not a refused account', async () 
   await assert.rejects(auth.login({ username: 'a@b.c', password: 'x' }), {
     kind: ERROR_KINDS.NETWORK,
   });
+});
+
+// Vectors pinned by hyundai_kia_connect_api (#1352): requests that answered 200 live.
+test('X-Fingerprint matches the live Hyundai and Kia vectors', () => {
+  const kia = brandConstants('kia');
+  assert.equal(
+    computeFingerprint(
+      {
+        'client-id': 'com.kia.oneapp.eu',
+        'client-name': 'KiaEU',
+        'client-version': '1.4.0',
+        'client-os-code': 'android',
+        'client-os-version': '14',
+        'X-Timestamp': '1700000000123',
+      },
+      kia.fingerprintKeys,
+    ),
+    '0a3ceccc83823ec0d2c5d39a15dbf722c813e6da48800a0156a7a8459db63337',
+  );
+  assert.equal(
+    computeFingerprint(
+      {
+        'client-id': 'com.hyundai.oneapp.eu',
+        'client-name': 'HyundaiEU',
+        'client-version': '1.4.0',
+        'client-os-code': 'android',
+        'client-os-version': '14',
+        'X-Timestamp': '1792000084084',
+      },
+      hyundai.fingerprintKeys,
+    ),
+    'df04e3dadd52288ce5b280b368af261272556b5360adbc90a817a167526e2946',
+  );
+  // The body is signed without its ASCII whitespace.
+  const headers = { 'client-id': 'a', 'X-Timestamp': '1' };
+  assert.equal(
+    computeFingerprint(headers, ['k'], '{"a": 1,\n "b": 2}'),
+    computeFingerprint(headers, ['k'], '{"a":1,"b":2}'),
+  );
+});
+
+test('only the codes of the signature gate send the request to the legacy route', () => {
+  for (const code of [9035, 9036, 9037]) assert.ok(isGateRejection(400, `{"code":${code}}`));
+  assert.equal(isGateRejection(400, '{"code":9013}'), false);
+  assert.equal(isGateRejection(500, '{"code":9035}'), false);
+  assert.equal(isGateRejection(400, '<html>'), false);
+});
+
+test('the sign-in exchanges the code on the signed route (since 2026-10-14)', async () => {
+  const { auth, requests } = setup(cciRoutes());
+  await auth.login({ username: 'me@example.com', password: 'secret', language: 'fr' });
+  for (const path of ['/auth/v1/token?code=', '/auth/v1/token-exchange?serviceType=CCS']) {
+    const request = requests.find((r) => r.url.includes(`cci-api-eu.hyundai.com${path}`));
+    assert.ok(request, path);
+    assert.equal(request.headers['client-name'], 'HyundaiEU');
+    assert.equal(request.headers['X-Timestamp'], String(NOW));
+    assert.equal(
+      request.headers['X-Fingerprint'],
+      computeFingerprint(request.headers, hyundai.fingerprintKeys, request.body ?? ''),
+    );
+  }
+});
+
+test('a refused signature falls back to the legacy route; a business error does not', async () => {
+  const gate = () => ({ status: 400, json: { code: 9036, message: 'bad signature' } });
+  const routes = cciRoutes().map((route) =>
+    String(route.url).includes('auth\\/v1\\/token\\?code')
+      ? { ...route, url: /cci-api-eu\.hyundai\.com\/auth\/v1\/token\?code=CODE123$/, reply: gate }
+      : route,
+  );
+  const legacyReply = cciRoutes().find((route) => String(route.url).includes('token\\?code')).reply;
+  routes.push({
+    method: 'POST',
+    url: /\/domain\/api\/v1\/auth\/token\?code=CODE123$/,
+    reply: legacyReply,
+  });
+  const { auth, requests } = setup(routes);
+  const tokens = await auth.login({ username: 'me@example.com', password: 'secret' });
+  assert.equal(tokens.accessToken, 'Bearer ccs-token');
+  assert.ok(requests.some((r) => r.url.includes('/domain/api/v1/auth/token?code=')));
+
+  const business = cciRoutes().map((route) =>
+    String(route.url).includes('token\\?code')
+      ? { ...route, reply: () => ({ status: 400, json: { code: 9013, message: 'invalid code' } }) }
+      : route,
+  );
+  const second = setup(business);
+  await assert.rejects(
+    second.auth.login({ username: 'me@example.com', password: 'secret' }),
+    /Token request refused \(HTTP 400\)/,
+  );
+  assert.equal(
+    second.requests.some((r) => r.url.includes('/domain/api/')),
+    false,
+    'no legacy call on a business error',
+  );
 });

@@ -15,6 +15,12 @@
 //      bluelink-refresh-token tools (typed in the password field): exchanged
 //      for an access token with the oauth2/token refresh grant.
 //
+// Since 2026-10-14 the OneApp /auth endpoints (code exchange, token refresh,
+// CCS exchange) only answer a request signed with an X-Fingerprint header, an
+// HMAC of the Android app's identity (upstream #1352); the old unsigned
+// domain/api routes are kept as a fallback when the signature itself is
+// refused (codes 9035 to 9037).
+//
 // Every request also needs a "device id", registered once per sign-in as if the
 // integration were a phone (notifications/register), and a "Stamp" header
 // computed from the app id and the time.
@@ -24,6 +30,7 @@
 
 import {
   constants as cryptoConstants,
+  createHmac,
   createPublicKey,
   publicEncrypt,
   randomBytes,
@@ -47,6 +54,46 @@ export function computeStamp(constants, nowMs = Date.now()) {
   const out = Buffer.alloc(length);
   for (let i = 0; i < length; i += 1) out[i] = raw[i] ^ cfb[i];
   return out.toString('base64');
+}
+
+// The Android OneApp build the fingerprint gate checks the signature against.
+export const ONEAPP_IDENTITY = {
+  clientVersion: '1.4.0',
+  osCode: 'android',
+  osVersion: '14',
+  deviceModel: 'SM-S918B',
+  notificationProvider: 'FCM',
+  userAgent: 'okhttp/4.12.0',
+};
+
+const IDENTITY_HEADERS = ['client-id', 'client-name', 'client-version', 'client-os-code'];
+
+/**
+ * X-Fingerprint: HMAC-SHA256 (hex). Key: the four identity headers + the
+ * brand's three key pieces. Message: the identity, client-os-version,
+ * X-Timestamp and the body without ASCII whitespace.
+ */
+export function computeFingerprint(headers, keyPieces, body = '') {
+  const lower = Object.fromEntries(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]));
+  const identity = IDENTITY_HEADERS.map((name) => lower[name] ?? '').join('');
+  const message =
+    identity +
+    (lower['client-os-version'] ?? '') +
+    (lower['x-timestamp'] ?? '') +
+    String(body ?? '').replace(/[ \t\n\v\f\r]+/g, '');
+  return createHmac('sha256', identity + keyPieces.join(''))
+    .update(message)
+    .digest('hex');
+}
+
+/** The gate refused the signature itself (missing, wrong, out of time): 9035–9037. */
+export function isGateRejection(status, text) {
+  if (status < 400 || status >= 500) return false;
+  try {
+    return [9035, 9036, 9037].includes(JSON.parse(text)?.code);
+  } catch {
+    return false;
+  }
 }
 
 /** UTC offset of a time zone now, as "+HH:MM". */
@@ -129,11 +176,64 @@ export function createAuth({ constants, http, now = Date.now }) {
     return headers;
   }
 
+  /** Headers of a signed request to the fingerprint-gated /auth endpoints. */
+  function signedHeaders({ deviceId, language, body = '' }) {
+    const headers = {
+      'client-id': constants.cciPackageId,
+      'client-name': `${constants.brandLabel}EU`,
+      'client-version': ONEAPP_IDENTITY.clientVersion,
+      'client-os-code': ONEAPP_IDENTITY.osCode,
+      'client-os-version': ONEAPP_IDENTITY.osVersion,
+      'client-device-id': deviceId ?? '',
+      'client-device-model': ONEAPP_IDENTITY.deviceModel,
+      'client-notification-provider-type': ONEAPP_IDENTITY.notificationProvider,
+      locale: (language ?? 'en').toUpperCase(),
+      timezone: timeZoneOffset(constants.dataTimeZone, new Date(now())),
+      'App-Request-Id': `${randomBytes(12).toString('hex').toUpperCase()}_${String(
+        deviceId ?? '',
+      ).replace(/-/g, '')}_AOS`,
+      'X-Brand': constants.brandLabel,
+      'X-Region': 'eu',
+      'User-Agent': ONEAPP_IDENTITY.userAgent,
+      Accept: '*/*',
+      'Accept-Language': (language ?? 'en').toLowerCase(),
+      'X-Timestamp': String(now()),
+    };
+    headers['X-Fingerprint'] = computeFingerprint(headers, constants.fingerprintKeys, body);
+    return headers;
+  }
+
+  /** The signed request; the legacy unsigned one only if the gate refuses the signature. */
+  async function signedOrLegacy(signed, legacy) {
+    const response = await signed();
+    return response.status !== 200 && isGateRejection(response.status, response.text)
+      ? legacy()
+      : response;
+  }
+
   /** CCI token set → CCS token for the vehicle API. */
   async function exchangeCcsToken({ deviceId, language, cci }) {
-    const response = await http.request(
-      `${constants.cciDomainApiUrl}v1/auth/token-exchange?serviceType=CCS`,
-      { method: 'POST', headers: cciHeaders({ deviceId, language, tokens: cci }) },
+    const response = await signedOrLegacy(
+      () =>
+        http.request(`${constants.cciApiUrl}/auth/v1/token-exchange?serviceType=CCS`, {
+          method: 'POST',
+          headers: {
+            ...signedHeaders({ deviceId, language }),
+            authorization: `Bearer ${String(cci.accessToken ?? '').replace(/^Bearer /, '')}`,
+            Authentication: cci.nonCcsToken ?? '',
+            ...(cci.exchangeableToken
+              ? {
+                  'exchangeable-token': cci.exchangeableToken,
+                  'non-ccs-token': cci.nonCcsToken ?? '',
+                }
+              : {}),
+          },
+        }),
+      () =>
+        http.request(`${constants.cciDomainApiUrl}v1/auth/token-exchange?serviceType=CCS`, {
+          method: 'POST',
+          headers: cciHeaders({ deviceId, language, tokens: cci }),
+        }),
     );
     if (response.status !== 200) {
       throw new BluelinkError(
@@ -232,9 +332,17 @@ export function createAuth({ constants, http, now = Date.now }) {
     }
 
     // 4. authorization code → CCI token set.
-    const tokenResponse = await http.request(
-      `${constants.cciDomainApiUrl}v1/auth/token?code=${encodeURIComponent(code)}`,
-      { method: 'POST', headers: cciHeaders({ deviceId, language }) },
+    const tokenResponse = await signedOrLegacy(
+      () =>
+        http.request(`${constants.cciApiUrl}/auth/v1/token?code=${encodeURIComponent(code)}`, {
+          method: 'POST',
+          headers: signedHeaders({ deviceId, language }),
+        }),
+      () =>
+        http.request(`${constants.cciDomainApiUrl}v1/auth/token?code=${encodeURIComponent(code)}`, {
+          method: 'POST',
+          headers: cciHeaders({ deviceId, language }),
+        }),
     );
     if (tokenResponse.status !== 200) {
       throw new BluelinkError(
@@ -316,23 +424,40 @@ export function createAuth({ constants, http, now = Date.now }) {
         deviceId: tokens.deviceId,
       });
     }
-    const response = await http.request(`${constants.cciDomainApiUrl}v2/auth/token-refresh`, {
-      headers: cciHeaders({
-        deviceId: tokens.deviceId,
-        language,
-        tokens: tokens.cci,
-        contentType: 'application/json',
-      }),
-      json: {
-        accessToken: String(tokens.cci.accessToken ?? '').replace(/^Bearer /, ''),
-        refreshToken: tokens.cci.refreshToken ?? '',
-        exchangeableAccessToken: tokens.cci.exchangeableToken ?? '',
-        exchangeableRefreshToken: tokens.cci.exchangeableRefreshToken ?? '',
-        nonCcsToken: tokens.cci.nonCcsToken ?? '',
-        nonCcsRefreshToken: tokens.cci.nonCcsRefreshToken ?? '',
-        idToken: tokens.cci.idToken ?? '',
-      },
-    });
+    const body = {
+      accessToken: String(tokens.cci.accessToken ?? '').replace(/^Bearer /, ''),
+      refreshToken: tokens.cci.refreshToken ?? '',
+      exchangeableAccessToken: tokens.cci.exchangeableToken ?? '',
+      exchangeableRefreshToken: tokens.cci.exchangeableRefreshToken ?? '',
+      nonCcsToken: tokens.cci.nonCcsToken ?? '',
+      nonCcsRefreshToken: tokens.cci.nonCcsRefreshToken ?? '',
+      idToken: tokens.cci.idToken ?? '',
+    };
+    const response = await signedOrLegacy(
+      () =>
+        // http.request sends JSON.stringify(json): the signature covers the same string.
+        http.request(`${constants.cciApiUrl}/auth/v2/token-refresh`, {
+          headers: {
+            ...signedHeaders({
+              deviceId: tokens.deviceId,
+              language,
+              body: JSON.stringify(body),
+            }),
+            'Content-Type': 'application/json',
+          },
+          json: body,
+        }),
+      () =>
+        http.request(`${constants.cciDomainApiUrl}v2/auth/token-refresh`, {
+          headers: cciHeaders({
+            deviceId: tokens.deviceId,
+            language,
+            tokens: tokens.cci,
+            contentType: 'application/json',
+          }),
+          json: body,
+        }),
+    );
     if (response.status !== 200) {
       throw new BluelinkError(
         ERROR_KINDS.TOKEN_EXPIRED,

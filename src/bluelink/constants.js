@@ -43,6 +43,9 @@ const BRAND_CONSTANTS = {
     cciClientName: 'hyundai',
     cciClientOsVersion: '18.7',
     cciNotificationProvider: 'APNS',
+    // X-Fingerprint key pieces of the Android OneApp 1.4.0 (they rotate with app releases).
+    fingerprintKeys: ['OsZDfDuCyVX', 'yfqjCoA2JbX', '2MrLpGwNBC'],
+    brandLabel: 'Hyundai',
   },
   [BRANDS.KIA]: {
     baseUrl: 'https://prd.eu-ccapi.kia.com:8080',
@@ -59,6 +62,8 @@ const BRAND_CONSTANTS = {
     cciClientName: 'kia',
     cciClientOsVersion: '27',
     cciNotificationProvider: 'IOS_APPSTORE',
+    fingerprintKeys: ['yb4Z1n2nlKe', 'ukNilE7QEdb', 'KB34nStPVa'],
+    brandLabel: 'Kia',
   },
 };
 

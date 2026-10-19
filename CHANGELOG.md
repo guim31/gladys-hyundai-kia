@@ -10,6 +10,14 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Fixed
+
+- Europe: sign-in failed with "Token request refused (HTTP 400)" since
+  2026-10-14. The OneApp /auth endpoints (code exchange, token refresh, CCS
+  exchange) now require an X-Fingerprint signature; ported from
+  hyundai_kia_connect_api #1352, with the old unsigned routes as a fallback
+  (forum t/11359).
+
 ## [1.1.1] - 2026-10-13
 
 ### Changed
