@@ -220,6 +220,11 @@ code de ce dépôt. Compléter ce fichier quand un nouveau piège est découvert
   Ces deux cas et un refus d'identifiants **arrêtent tout** jusqu'au prochain enregistrement de la
   configuration : réessayer ferait bloquer le compte. Un jeton de rafraîchissement « legacy » de
   48 caractères dans le champ mot de passe court-circuite le formulaire.
+- **X-Fingerprint (depuis le 14/10/2026)** : `/auth/v1/token`, `/auth/v2/token-refresh` et
+  `/auth/v1/token-exchange` de `cci-api-eu` exigent un HMAC-SHA256 de l'identité de l'appli Android
+  OneApp 1.4.0 (`computeFingerprint`, clés par marque dans `constants.js`, upstream #1352). Les
+  routes `domain/api` non signées ne servent qu'en repli, sur les codes 9035-9037 du portail. Les
+  clés tournent avec les versions de l'appli : un 9036 généralisé = clés à mettre à jour.
 - Les jetons tournent et vivent dans `/data/hyundai-kia.json` (0600, écriture atomique), jamais
   dans la configuration ni les journaux. Un `deviceId` refusé (4002) est réenregistré.
 - **Deux protocoles**, choisis par `ccuCCS2ProtocolSupport` de la liste des voitures :
