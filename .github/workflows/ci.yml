@@ -76,7 +76,7 @@ jobs:
       # Same build as build.yml, without pushing, and for amd64 only: emulating
       # arm64 is slow, and only the release build needs it.
       - name: Build (no push)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64
