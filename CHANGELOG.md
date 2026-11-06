@@ -10,6 +10,12 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Fixed
+
+- Sign-in failed for every new connection since 22 October 2026 ("returned to the login page"): the
+  login pages now get a current Android Chrome User-Agent, the 2012 one being rejected by Kia's and
+  Hyundai's EU sign-in.
+
 ## [1.1.3] - 2026-10-22
 
 ### Security

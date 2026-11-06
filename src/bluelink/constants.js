@@ -21,10 +21,12 @@ const COMMON = {
   dataTimeZone: 'Europe/Berlin',
   cciClientVersion: '1.3.3',
   userAgent: 'okhttp/3.12.0',
-  // The login pages answer a mobile browser.
+  // The login pages answer a mobile browser. Since 2026-10-22 the EU signin sends the 2012-era
+  // Chrome/18 string back to the login page: a current Android Chrome is required
+  // (hyundai_kia_connect_api #1397, fixed by #1416).
   loginUserAgent:
-    'Mozilla/5.0 (Linux; Android 4.1.1; Galaxy Nexus Build/JRO03C) AppleWebKit/535.19 ' +
-    '(KHTML, like Gecko) Chrome/18.0.1025.166 Mobile Safari/535.19_CCS_APP_AOS',
+    'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) ' +
+    'Chrome/120.0.0.0 Mobile Safari/537.36_CCS_APP_AOS',
 };
 
 const BRAND_CONSTANTS = {
