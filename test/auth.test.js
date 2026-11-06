@@ -125,6 +125,18 @@ test('e-mail + password: the five steps of the OneApp sign-in', async () => {
   assert.equal(exchange.headers['client-device-id'], 'device-1');
 });
 
+test('the sign-in announces a current Android Chrome, not the 2012 one Kia rejects', async () => {
+  // Since 2026-10-22 the EU signin sends Chrome/18 (Galaxy Nexus) back to the login page
+  // (hyundai_kia_connect_api #1397).
+  const { auth, requests } = setup(cciRoutes());
+  await auth.login({ username: 'driver@example.com', password: 'secret', language: 'fr' });
+  const signin = requests.find((r) => r.url.endsWith('/auth/account/signin'));
+  const userAgent = signin.headers['User-Agent'];
+  assert.ok(!/Galaxy Nexus|AppleWebKit\/535/.test(userAgent), userAgent);
+  assert.ok(Number(/Chrome\/(\d+)/.exec(userAgent)?.[1]) >= 100, userAgent);
+  assert.ok(userAgent.endsWith('_CCS_APP_AOS'), userAgent);
+});
+
 test('a sign-in sent back to the form is refused credentials', async () => {
   const { auth } = setup(
     cciRoutes({
